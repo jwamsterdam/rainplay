@@ -24,15 +24,6 @@ function App() {
   return (
     <main className="app-shell">
       <section className="weather-hero" aria-label="Huidig weer">
-        <div className="status-bar" aria-hidden="true">
-          <span>09:41</span>
-          <span className="status-icons">
-            <i className="signal" />
-            <i className="wifi" />
-            <i className="battery" />
-          </span>
-        </div>
-
         <button className="location-button" type="button">
           <span>Annecy</span>
           <span className="chevron" aria-hidden="true" />
