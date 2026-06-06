@@ -15,6 +15,10 @@ const BOTTOM = 58;
 const MAX_MM = 3;
 
 export function DayChart({ hours }: DayChartProps) {
+  if (hours.length === 0) {
+    return <div className="loading-panel">Geen uurdata beschikbaar</div>;
+  }
+
   const plotWidth = CHART_WIDTH - LEFT - RIGHT;
   const plotHeight = CHART_HEIGHT - TOP - BOTTOM;
   const slotWidth = plotWidth / hours.length;

@@ -172,11 +172,22 @@ Recommended:
 - TypeScript
 - Vite
 - PWA manifest
+- Jotai for client/UI state
+- TanStack Query for weather API/server state
 - CSS modules or plain CSS, depending on project size
 - Open-Meteo API
 - Browser geolocation API
 
 Keep dependencies light. For the chart, prefer a custom SVG/CSS implementation first because the visual design is specific and simple.
+
+## App Architecture
+
+- `src/providers/AppProviders.tsx` wires the explicit Jotai app store and TanStack Query client.
+- `src/state/` contains client state atoms such as selected day, horizon, and location.
+- `src/queries/` contains React Query hooks.
+- `src/api/` contains external API adapters, starting with Open-Meteo.
+- `src/design/tokens.css` contains design tokens for color, radius, spacing, shadows, and typography.
+- `src/screens/WeatherScreen.tsx` owns the first product screen.
 
 ## Attribution
 

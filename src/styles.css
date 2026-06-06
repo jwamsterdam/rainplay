@@ -1,8 +1,6 @@
 :root {
-  color: #101828;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "SF Pro Text", "Segoe UI", sans-serif;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,7 +14,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #eaf4fb;
+  background: var(--color-page-cool);
 }
 
 button {
@@ -26,13 +24,13 @@ button {
 
 .app-shell {
   min-height: 100vh;
-  background: #f8fbff;
+  background: var(--color-page);
 }
 
 .weather-hero {
   position: relative;
   min-height: 43vh;
-  padding: max(18px, env(safe-area-inset-top)) 22px 96px;
+  padding: max(var(--space-4), env(safe-area-inset-top)) var(--space-5) 96px;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(247, 251, 255, 0.15) 70%, rgba(247, 251, 255, 0.9)),
@@ -82,7 +80,7 @@ button {
 .location-arrow {
   width: 23px;
   height: 23px;
-  color: #1d7eea;
+  color: var(--color-accent);
   transform: rotate(20deg);
 }
 
@@ -100,7 +98,7 @@ button {
 
 .hero-copy h1 {
   margin: -4px 0 14px;
-  color: #091526;
+  color: var(--color-ink-strong);
   font-size: clamp(104px, 30vw, 150px);
   font-weight: 650;
   letter-spacing: 0;
@@ -109,7 +107,7 @@ button {
 
 .hero-advice {
   margin: 0;
-  color: #091526;
+  color: var(--color-ink-strong);
   font-size: clamp(37px, 10vw, 56px);
   font-weight: 760;
   line-height: 1.02;
@@ -127,26 +125,26 @@ button {
   z-index: 2;
   width: min(100%, 500px);
   margin: -70px auto 0;
-  padding: 22px 20px calc(26px + env(safe-area-inset-bottom));
-  border-radius: 28px 28px 0 0;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 -12px 40px rgba(46, 81, 112, 0.14);
+  padding: var(--space-5) 20px calc(var(--space-6) + env(safe-area-inset-bottom));
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sheet);
   backdrop-filter: blur(18px);
 }
 
 .segmented {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
+  gap: var(--space-1);
   min-height: 58px;
   padding: 4px;
   border: 1px solid rgba(226, 232, 240, 0.74);
-  border-radius: 16px;
-  background: #f3f6f9;
+  border-radius: var(--radius-control);
+  background: var(--color-control);
 }
 
 .segmented + .segmented {
-  margin-top: 18px;
+  margin-top: var(--space-4);
 }
 
 .segmented-compact {
@@ -158,7 +156,7 @@ button {
   min-height: 48px;
   padding: 0 6px;
   border: 0;
-  border-radius: 13px;
+  border-radius: var(--radius-control-inner);
   background: transparent;
   color: #4b5565;
   font-size: clamp(13px, 3.65vw, 18px);
@@ -167,23 +165,21 @@ button {
 
 .segment.active {
   background: rgba(255, 255, 255, 0.98);
-  color: #111827;
-  box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.06),
-    0 8px 18px rgba(16, 24, 40, 0.08);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-control);
 }
 
 .chart-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  margin-top: 26px;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
 .chart-heading h2 {
   margin: 0;
-  color: #0b1729;
+  color: var(--color-ink-strong);
   font-size: clamp(26px, 7vw, 36px);
   line-height: 1;
 }
@@ -192,18 +188,31 @@ button {
   flex: 0 0 auto;
   padding: 9px 15px;
   border-radius: 15px;
-  background: #fff1c9;
-  color: #111827;
+  background: var(--color-best);
+  color: var(--color-ink);
   font-size: clamp(16px, 4.4vw, 22px);
   font-weight: 650;
 }
 
 .chart-shell {
-  margin-top: 14px;
+  margin-top: var(--space-3);
   overflow: hidden;
-  border: 1px solid rgba(220, 228, 236, 0.88);
-  border-radius: 18px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-solid);
+}
+
+.loading-panel {
+  display: grid;
+  min-height: 292px;
+  margin-top: var(--space-3);
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-solid);
+  color: var(--color-ink-muted);
+  font-size: 18px;
+  font-weight: 560;
 }
 
 .chart {
@@ -215,13 +224,13 @@ button {
 .axis-label,
 .score-label,
 .time-label {
-  fill: #697586;
+  fill: var(--color-ink-muted);
   font-size: 21px;
   font-weight: 500;
 }
 
 .score-number {
-  fill: #111827;
+  fill: var(--color-ink);
   font-size: 25px;
   font-weight: 610;
 }
@@ -233,7 +242,7 @@ button {
 }
 
 .rain-bar {
-  fill: #78b4f8;
+  fill: var(--color-rain);
   stroke: rgba(255, 255, 255, 0.95);
   stroke-width: 5px;
   filter: drop-shadow(0 6px 10px rgba(67, 145, 235, 0.15));
@@ -247,10 +256,10 @@ button {
   min-height: 66px;
   margin-top: 18px;
   padding: 0 20px;
-  border: 1px solid rgba(230, 235, 241, 0.72);
-  border-radius: 16px;
-  background: #f8fafc;
-  color: #111827;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
   font-size: clamp(17px, 4.6vw, 23px);
 }
 
@@ -265,7 +274,7 @@ button {
   gap: 36px;
   align-items: center;
   margin: 20px 0 0 20px;
-  color: #697586;
+  color: var(--color-ink-muted);
   font-size: 18px;
 }
 
@@ -284,16 +293,16 @@ button {
 
 .legend-sky {
   border: 1px solid #e5dcb8;
-  background: #fff7dc;
+  background: var(--color-sky-sun);
 }
 
 .legend-rain {
-  background: #78b4f8;
+  background: var(--color-rain);
 }
 
 .attribution {
   margin: 18px 0 0;
-  color: #8a95a4;
+  color: var(--color-ink-soft);
   font-size: 12px;
   text-align: center;
 }
@@ -314,7 +323,7 @@ button {
     overflow: hidden;
     border: 1px solid rgba(203, 213, 225, 0.78);
     border-radius: 34px;
-    box-shadow: 0 24px 80px rgba(31, 50, 70, 0.2);
+    box-shadow: var(--shadow-device);
   }
 
   .weather-hero {

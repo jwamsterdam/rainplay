@@ -1,13 +1,15 @@
 import type { HourlyWeather } from "../types";
 
 export function skyColor(hour: HourlyWeather): string {
-  if (hour.kind === "rain") return "#f1f5f9";
-  if (hour.kind === "cloud") return "#f5f8fb";
-  if (hour.kind === "partly") return "#eef8ff";
-  return "#fff7dc";
+  if (hour.kind === "rain") return "var(--color-sky-rain)";
+  if (hour.kind === "cloud") return "var(--color-sky-cloud)";
+  if (hour.kind === "partly") return "var(--color-sky-partly)";
+  return "var(--color-sky-sun)";
 }
 
 export function bestStartTime(hours: HourlyWeather[]): string {
+  if (hours.length === 0) return "--:--";
+
   const best = hours.reduce((currentBest, hour) =>
     hour.score > currentBest.score ? hour : currentBest,
   );

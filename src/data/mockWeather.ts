@@ -2,6 +2,7 @@ import type { HourlyWeather } from "../types";
 
 export const hourlyWeather: HourlyWeather[] = [
   {
+    isoTime: "2026-06-06T08:00",
     time: "08:00",
     score: 3,
     precipitationMm: 1.8,
@@ -11,6 +12,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "rain",
   },
   {
+    isoTime: "2026-06-06T09:00",
     time: "09:00",
     score: 3,
     precipitationMm: 1.1,
@@ -20,6 +22,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "rain",
   },
   {
+    isoTime: "2026-06-06T10:00",
     time: "10:00",
     score: 4,
     precipitationMm: 0.6,
@@ -29,6 +32,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "cloud",
   },
   {
+    isoTime: "2026-06-06T11:00",
     time: "11:00",
     score: 5,
     precipitationMm: 0.3,
@@ -38,6 +42,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "partly",
   },
   {
+    isoTime: "2026-06-06T12:00",
     time: "12:00",
     score: 7,
     precipitationMm: 0.15,
@@ -47,6 +52,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "partly",
   },
   {
+    isoTime: "2026-06-06T13:00",
     time: "13:00",
     score: 7,
     precipitationMm: 0,
@@ -56,6 +62,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "sun",
   },
   {
+    isoTime: "2026-06-06T14:00",
     time: "14:00",
     score: 8,
     precipitationMm: 0,
@@ -65,6 +72,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "sun",
   },
   {
+    isoTime: "2026-06-06T15:00",
     time: "15:00",
     score: 8,
     precipitationMm: 0,
@@ -74,6 +82,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "sun",
   },
   {
+    isoTime: "2026-06-06T16:00",
     time: "16:00",
     score: 7,
     precipitationMm: 0,
@@ -83,6 +92,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "partly",
   },
   {
+    isoTime: "2026-06-06T17:00",
     time: "17:00",
     score: 7,
     precipitationMm: 0,
@@ -92,6 +102,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "partly",
   },
   {
+    isoTime: "2026-06-06T18:00",
     time: "18:00",
     score: 6,
     precipitationMm: 0.1,
@@ -101,6 +112,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "partly",
   },
   {
+    isoTime: "2026-06-06T19:00",
     time: "19:00",
     score: 5,
     precipitationMm: 0,
@@ -110,6 +122,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "cloud",
   },
   {
+    isoTime: "2026-06-06T20:00",
     time: "20:00",
     score: 4,
     precipitationMm: 0,
@@ -119,6 +132,7 @@ export const hourlyWeather: HourlyWeather[] = [
     kind: "cloud",
   },
   {
+    isoTime: "2026-06-06T21:00",
     time: "21:00",
     score: 3,
     precipitationMm: 0.2,

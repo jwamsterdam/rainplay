@@ -197,11 +197,22 @@ Use:
 - React;
 - TypeScript;
 - Vite;
+- Jotai for client/UI state;
+- TanStack Query for weather API/server state;
 - PWA manifest;
 - browser geolocation;
 - custom SVG/CSS chart unless a charting library becomes clearly necessary.
 
 Keep the initial app small. Avoid adding a design system or heavy chart dependency too early.
+
+Current architecture:
+
+- `src/providers/AppProviders.tsx` provides the explicit Jotai store and QueryClient.
+- `src/state/` owns atoms and app-store setup.
+- `src/queries/` owns TanStack Query hooks.
+- `src/api/` owns Open-Meteo integration and API normalization.
+- `src/design/tokens.css` is the design-token layer.
+- `src/screens/WeatherScreen.tsx` is the main screen composition.
 
 ## Build Order
 
