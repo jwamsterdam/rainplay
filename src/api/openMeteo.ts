@@ -4,6 +4,8 @@ export type ForecastLocation = {
   name: string;
   latitude: number;
   longitude: number;
+  source: "default" | "gps" | "manual";
+  updatedAt?: number;
 };
 
 export type Forecast = {

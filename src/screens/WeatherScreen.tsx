@@ -3,12 +3,15 @@ import { useAtom, useAtomValue } from "jotai";
 import { DayChart } from "../components/DayChart";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { LocationArrow } from "../components/WeatherIcons";
+import { useCurrentLocation } from "../hooks/useCurrentLocation";
 import { bestStartTime } from "../lib/chart";
 import { visibleHoursForSelection } from "../lib/weatherView";
 import { useForecastQuery } from "../queries/weather";
 import {
   dayOptions,
   horizonOptions,
+  locationErrorAtom,
+  locationStatusAtom,
   selectedDayAtom,
   selectedHorizonAtom,
   selectedLocationAtom,
@@ -18,6 +21,9 @@ export function WeatherScreen() {
   const [day, setDay] = useAtom(selectedDayAtom);
   const [horizon, setHorizon] = useAtom(selectedHorizonAtom);
   const location = useAtomValue(selectedLocationAtom);
+  const locationStatus = useAtomValue(locationStatusAtom);
+  const locationError = useAtomValue(locationErrorAtom);
+  const { refreshLocation } = useCurrentLocation();
   const forecast = useForecastQuery(location);
   const hourly = forecast.data?.hourly ?? [];
 
@@ -31,11 +37,18 @@ export function WeatherScreen() {
   return (
     <main className="app-shell">
       <section className="weather-hero" aria-label="Huidig weer">
-        <button className="location-button" type="button">
-          <span>{location.name}</span>
+        <button
+          aria-label="Locatie verversen"
+          className="location-button"
+          disabled={locationStatus === "locating"}
+          onClick={refreshLocation}
+          type="button"
+        >
+          <span>{locationStatus === "locating" ? "Locatie ophalen..." : location.name}</span>
           <span className="chevron" aria-hidden="true" />
           <LocationArrow className="location-arrow" />
         </button>
+        {locationError ? <p className="location-status">{locationError}</p> : null}
 
         <div className="hero-copy">
           <p className="eyebrow">{day}</p>

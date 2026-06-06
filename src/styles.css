@@ -79,6 +79,20 @@ button {
   font-weight: 600;
 }
 
+.location-button:disabled {
+  opacity: 0.72;
+}
+
+.location-status {
+  position: relative;
+  z-index: 1;
+  margin: 2px auto 0;
+  color: rgba(14, 31, 52, 0.62);
+  font-size: 13px;
+  font-weight: 560;
+  text-align: center;
+}
+
 .chevron {
   width: 0;
   height: 0;
