@@ -10,10 +10,16 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   background: var(--color-page-cool);
 }
 
@@ -23,14 +29,18 @@ button {
 }
 
 .app-shell {
+  position: relative;
+  height: 100dvh;
   min-height: 100vh;
+  overflow: hidden;
   background: var(--color-page);
 }
 
 .weather-hero {
   position: relative;
-  min-height: 43vh;
-  padding: max(var(--space-4), env(safe-area-inset-top)) var(--space-5) 96px;
+  height: 46dvh;
+  min-height: 360px;
+  padding: max(14px, env(safe-area-inset-top)) var(--space-5) 96px;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(247, 251, 255, 0.15) 70%, rgba(247, 251, 255, 0.9)),
@@ -61,7 +71,7 @@ button {
   justify-content: center;
   gap: 8px;
   width: fit-content;
-  margin: 22px auto 0;
+  margin: 14px auto 0;
   padding: 6px 8px;
   border: 0;
   background: rgba(255, 255, 255, 0);
@@ -85,21 +95,21 @@ button {
 }
 
 .hero-copy {
-  margin-top: 46px;
+  margin-top: clamp(24px, 4.7dvh, 42px);
   text-align: center;
 }
 
 .eyebrow {
   margin: 0;
   color: rgba(15, 30, 52, 0.76);
-  font-size: clamp(25px, 6.6vw, 34px);
+  font-size: clamp(23px, 6.1vw, 32px);
   font-weight: 650;
 }
 
 .hero-copy h1 {
-  margin: -4px 0 14px;
+  margin: -4px 0 10px;
   color: var(--color-ink-strong);
-  font-size: clamp(104px, 30vw, 150px);
+  font-size: clamp(92px, 27vw, 132px);
   font-weight: 650;
   letter-spacing: 0;
   line-height: 0.95;
@@ -108,24 +118,29 @@ button {
 .hero-advice {
   margin: 0;
   color: var(--color-ink-strong);
-  font-size: clamp(37px, 10vw, 56px);
+  font-size: clamp(32px, 8.7vw, 46px);
   font-weight: 760;
   line-height: 1.02;
 }
 
 .hero-subtitle {
-  margin: 16px 0 0;
+  margin: 10px 0 0;
   color: rgba(14, 31, 52, 0.68);
-  font-size: clamp(20px, 5.2vw, 27px);
+  font-size: clamp(18px, 4.75vw, 24px);
   font-weight: 500;
 }
 
 .decision-sheet {
-  position: relative;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 2;
   width: min(100%, 500px);
-  margin: -70px auto 0;
-  padding: var(--space-5) 20px calc(var(--space-6) + env(safe-area-inset-bottom));
+  height: 62dvh;
+  min-height: 510px;
+  margin: 0 auto;
+  padding: 16px 20px max(12px, env(safe-area-inset-bottom));
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   background: var(--color-surface);
   box-shadow: var(--shadow-sheet);
@@ -136,7 +151,7 @@ button {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-1);
-  min-height: 58px;
+  min-height: 48px;
   padding: 4px;
   border: 1px solid rgba(226, 232, 240, 0.74);
   border-radius: var(--radius-control);
@@ -144,7 +159,7 @@ button {
 }
 
 .segmented + .segmented {
-  margin-top: var(--space-4);
+  margin-top: 10px;
 }
 
 .segmented-compact {
@@ -153,7 +168,7 @@ button {
 
 .segment {
   min-width: 0;
-  min-height: 48px;
+  min-height: 38px;
   padding: 0 6px;
   border: 0;
   border-radius: var(--radius-control-inner);
@@ -174,28 +189,28 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-top: var(--space-6);
+  margin-top: 16px;
 }
 
 .chart-heading h2 {
   margin: 0;
   color: var(--color-ink-strong);
-  font-size: clamp(26px, 7vw, 36px);
+  font-size: clamp(24px, 6.4vw, 32px);
   line-height: 1;
 }
 
 .chart-heading span {
   flex: 0 0 auto;
-  padding: 9px 15px;
+  padding: 8px 13px;
   border-radius: 15px;
   background: var(--color-best);
   color: var(--color-ink);
-  font-size: clamp(16px, 4.4vw, 22px);
+  font-size: clamp(15px, 4.1vw, 20px);
   font-weight: 650;
 }
 
 .chart-shell {
-  margin-top: var(--space-3);
+  margin-top: 10px;
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
@@ -204,8 +219,8 @@ button {
 
 .loading-panel {
   display: grid;
-  min-height: 292px;
-  margin-top: var(--space-3);
+  min-height: clamp(200px, 27dvh, 238px);
+  margin-top: 10px;
   place-items: center;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
@@ -218,7 +233,7 @@ button {
 .chart {
   display: block;
   width: 100%;
-  height: auto;
+  height: clamp(200px, 27dvh, 238px);
 }
 
 .axis-label,
@@ -253,9 +268,9 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  min-height: 66px;
-  margin-top: 18px;
-  padding: 0 20px;
+  min-height: 48px;
+  margin-top: 9px;
+  padding: 0 16px;
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-control);
   background: var(--color-surface-soft);
@@ -265,7 +280,7 @@ button {
 
 .best-window strong {
   flex: 0 0 auto;
-  font-size: clamp(24px, 7vw, 34px);
+  font-size: clamp(21px, 6vw, 30px);
   letter-spacing: 0;
 }
 
@@ -273,7 +288,7 @@ button {
   display: flex;
   gap: 36px;
   align-items: center;
-  margin: 20px 0 0 20px;
+  margin: 9px 0 0 18px;
   color: var(--color-ink-muted);
   font-size: 18px;
 }
@@ -285,9 +300,9 @@ button {
 }
 
 .legend i {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
   display: inline-block;
 }
 
@@ -301,7 +316,7 @@ button {
 }
 
 .attribution {
-  margin: 18px 0 0;
+  margin: 7px 0 0;
   color: var(--color-ink-soft);
   font-size: 12px;
   text-align: center;
@@ -318,6 +333,7 @@ button {
 
   .app-shell {
     width: 430px;
+    height: 932px;
     min-height: 932px;
     margin: 28px 0;
     overflow: hidden;
@@ -327,10 +343,13 @@ button {
   }
 
   .weather-hero {
-    min-height: 420px;
+    height: 430px;
+    min-height: 430px;
   }
 
   .decision-sheet {
     width: 100%;
+    height: 578px;
+    min-height: 578px;
   }
 }
