@@ -26,6 +26,7 @@ export function WeatherScreen() {
   const { refreshLocation } = useCurrentLocation();
   const forecast = useForecastQuery(location);
   const hourly = forecast.data?.hourly ?? [];
+  const showHorizonSelector = day === "Vandaag";
 
   const visibleHours = useMemo(() => {
     return visibleHoursForSelection(hourly, day, horizon);
@@ -66,13 +67,15 @@ export function WeatherScreen() {
           options={dayOptions}
           value={day}
         />
-        <SegmentedControl
-          compact
-          label="Tijdshorizon kiezen"
-          onChange={setHorizon}
-          options={horizonOptions}
-          value={horizon}
-        />
+        {showHorizonSelector ? (
+          <SegmentedControl
+            compact
+            label="Tijdshorizon kiezen"
+            onChange={setHorizon}
+            options={horizonOptions}
+            value={horizon}
+          />
+        ) : null}
 
         <div className="chart-heading">
           <h2>Dagbeeld</h2>

@@ -12,6 +12,8 @@ export function visibleHoursForSelection(
   horizon: HorizonOption,
 ) {
   const dayHours = hoursForDay(hours, day);
+  if (day !== "Vandaag") return dayHours;
+
   return visibleHoursForHorizon(dayHours, horizon);
 }
 
