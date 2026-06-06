@@ -59,7 +59,13 @@ export function WeatherScreen() {
       </section>
 
       <section className="decision-sheet" aria-label="Buitenadvies">
-        <SegmentedControl label="Dag kiezen" onChange={setDay} options={dayOptions} value={day} />
+        <SegmentedControl
+          displayLabels={{ Overmorgen: "Overm." }}
+          label="Dag kiezen"
+          onChange={setDay}
+          options={dayOptions}
+          value={day}
+        />
         <SegmentedControl
           compact
           label="Tijdshorizon kiezen"
