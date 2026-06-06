@@ -22,7 +22,7 @@ Reasoning:
 
 Primary reference:
 
-![North star design](docs/screenshots/north-star-header-graph.png)
+<img src="docs/screenshots/north-star-header-graph.png" alt="North star design" width="360">
 
 The latest design combines:
 
