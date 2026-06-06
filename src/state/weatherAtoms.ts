@@ -12,9 +12,9 @@ export const selectedHorizonAtom = atom<HorizonOption>("+6 uur");
 selectedHorizonAtom.debugLabel = "selectedHorizonAtom";
 
 export const selectedLocationAtom = atom<ForecastLocation>({
-  name: "Annecy",
-  latitude: 45.8992,
-  longitude: 6.1294,
+  name: "Haarlem",
+  latitude: 52.3948,
+  longitude: 4.6382,
   source: "default",
 });
 selectedLocationAtom.debugLabel = "selectedLocationAtom";
