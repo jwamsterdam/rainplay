@@ -123,12 +123,14 @@ function toHourlyWeather(data: OpenMeteoResponse, index: number, isoTime: string
   const windSpeed = valueAt(data.hourly.wind_speed_10m, index);
   const windGusts = valueAt(data.hourly.wind_gusts_10m, index);
   const apparentTemperature = valueAt(data.hourly.apparent_temperature, index);
+  const temperatureC = valueAt(data.hourly.temperature_2m, index);
   const weatherCode = valueAt(data.hourly.weather_code, index);
   const isDay = valueAt(data.hourly.is_day, index) === 1;
 
   return {
     isoTime,
     time: formatHour(isoTime),
+    temperatureC,
     score: outdoorScore({
       apparentTemperature,
       cloudCover,
@@ -158,10 +160,12 @@ function toMinutelyWeather(data: OpenMeteoResponse, index: number, isoTime: stri
   const windSpeed = valueAt(data.hourly.wind_speed_10m, nearestHourlyIndex);
   const windGusts = valueAt(data.hourly.wind_gusts_10m, nearestHourlyIndex);
   const apparentTemperature = valueAt(data.hourly.apparent_temperature, nearestHourlyIndex);
+  const temperatureC = valueAt(data.hourly.temperature_2m, nearestHourlyIndex);
 
   return {
     isoTime,
     time: formatHour(isoTime),
+    temperatureC,
     score: outdoorScore({
       apparentTemperature,
       cloudCover,

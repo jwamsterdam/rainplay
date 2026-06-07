@@ -7,6 +7,7 @@ export type WeatherKind = "rain" | "cloud" | "partly" | "sun";
 export type HourlyWeather = {
   isoTime: string;
   time: string;
+  temperatureC: number;
   score: number;
   precipitationMm: number;
   precipitationProbability: number;

@@ -121,6 +121,7 @@ function summarizeDay(date: string, dayHours: HourlyWeather[]): HourlyWeather {
     ...bestHour,
     isoTime: `${date}T12:00`,
     time: formatWeekday(date),
+    temperatureC: Math.round(average(dayHours.map((hour) => hour.temperatureC))),
     score: Math.round(average(dayHours.map((hour) => hour.score))),
     precipitationMm: Math.min(3, precipitationSum),
     precipitationProbability: Math.max(...dayHours.map((hour) => hour.precipitationProbability)),

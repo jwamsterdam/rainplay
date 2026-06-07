@@ -266,10 +266,31 @@ button {
 
 .axis-label,
 .score-label,
-.time-label {
+.time-label,
+.temperature-axis-label {
   fill: var(--color-ink-muted);
   font-size: 19px;
   font-weight: 500;
+}
+
+.temperature-axis-label {
+  fill: rgba(255, 116, 50, 0.82);
+  font-size: 17px;
+  font-weight: 620;
+}
+
+.temperature-line {
+  stroke: var(--color-temperature);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4px;
+  opacity: 0.72;
+}
+
+.temperature-point {
+  fill: #ffffff;
+  stroke: var(--color-temperature);
+  stroke-width: 3px;
 }
 
 .score-badge {

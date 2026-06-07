@@ -9,10 +9,19 @@ type DayChartProps = {
 const CHART_WIDTH = 780;
 const CHART_HEIGHT = 500;
 const LEFT = 98;
-const RIGHT = 22;
+const RIGHT = 58;
 const TOP = 162;
 const BOTTOM = 64;
 const MAX_MM = 3;
+
+function temperatureDomain(hours: HourlyWeather[]) {
+  const temperatures = hours.map((hour) => hour.temperatureC);
+  const min = Math.floor(Math.min(...temperatures) / 2) * 2;
+  const max = Math.ceil(Math.max(...temperatures) / 2) * 2;
+
+  if (min === max) return { min: min - 2, max: max + 2 };
+  return { min, max };
+}
 
 function scoreColor(score: number) {
   if (score >= 8) return "var(--color-score-good)";
@@ -30,6 +39,17 @@ export function DayChart({ hours }: DayChartProps) {
   const plotHeight = CHART_HEIGHT - TOP - BOTTOM;
   const slotWidth = plotWidth / hours.length;
   const isDense = hours.length > 8;
+  const temperature = temperatureDomain(hours);
+  const temperatureY = (value: number) => {
+    const normalized = (value - temperature.min) / (temperature.max - temperature.min);
+    return TOP + plotHeight - normalized * plotHeight;
+  };
+  const temperaturePoints = hours
+    .map((hour, index) => {
+      const x = LEFT + index * slotWidth + slotWidth / 2;
+      return `${x},${temperatureY(hour.temperatureC)}`;
+    })
+    .join(" ");
 
   return (
     <div className="chart-shell">
@@ -95,6 +115,26 @@ export function DayChart({ hours }: DayChartProps) {
               </text>
             </g>
           );
+        })}
+
+        {[temperature.min, Math.round((temperature.min + temperature.max) / 2), temperature.max].map((tick) => {
+          const y = temperatureY(tick);
+
+          return (
+            <text className="temperature-axis-label" key={tick} textAnchor="start" x={CHART_WIDTH - RIGHT + 12} y={y + 7}>
+              {tick}°
+            </text>
+          );
+        })}
+
+        <polyline className="temperature-line" fill="none" points={temperaturePoints} />
+        {hours.map((hour, index) => {
+          const x = LEFT + index * slotWidth + slotWidth / 2;
+          const showPoint = !isDense || index % 2 === 0 || index === hours.length - 1;
+
+          return showPoint ? (
+            <circle className="temperature-point" cx={x} cy={temperatureY(hour.temperatureC)} key={`temp-${hour.isoTime}`} r="3.5" />
+          ) : null;
         })}
 
         <text className="score-label" x="24" y="64">

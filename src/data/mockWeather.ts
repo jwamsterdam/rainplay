@@ -4,6 +4,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T08:00",
     time: "08:00",
+    temperatureC: 15,
     score: 3,
     precipitationMm: 1.8,
     precipitationProbability: 80,
@@ -14,6 +15,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T09:00",
     time: "09:00",
+    temperatureC: 16,
     score: 3,
     precipitationMm: 1.1,
     precipitationProbability: 68,
@@ -24,6 +26,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T10:00",
     time: "10:00",
+    temperatureC: 17,
     score: 4,
     precipitationMm: 0.6,
     precipitationProbability: 45,
@@ -34,6 +37,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T11:00",
     time: "11:00",
+    temperatureC: 18,
     score: 5,
     precipitationMm: 0.3,
     precipitationProbability: 30,
@@ -44,6 +48,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T12:00",
     time: "12:00",
+    temperatureC: 19,
     score: 7,
     precipitationMm: 0.15,
     precipitationProbability: 20,
@@ -54,6 +59,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T13:00",
     time: "13:00",
+    temperatureC: 20,
     score: 7,
     precipitationMm: 0,
     precipitationProbability: 10,
@@ -64,6 +70,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T14:00",
     time: "14:00",
+    temperatureC: 20,
     score: 8,
     precipitationMm: 0,
     precipitationProbability: 8,
@@ -74,6 +81,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T15:00",
     time: "15:00",
+    temperatureC: 21,
     score: 8,
     precipitationMm: 0,
     precipitationProbability: 8,
@@ -84,6 +92,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T16:00",
     time: "16:00",
+    temperatureC: 21,
     score: 7,
     precipitationMm: 0,
     precipitationProbability: 12,
@@ -94,6 +103,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T17:00",
     time: "17:00",
+    temperatureC: 20,
     score: 7,
     precipitationMm: 0,
     precipitationProbability: 15,
@@ -104,6 +114,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T18:00",
     time: "18:00",
+    temperatureC: 19,
     score: 6,
     precipitationMm: 0.1,
     precipitationProbability: 18,
@@ -114,6 +125,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T19:00",
     time: "19:00",
+    temperatureC: 18,
     score: 5,
     precipitationMm: 0,
     precipitationProbability: 18,
@@ -124,6 +136,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T20:00",
     time: "20:00",
+    temperatureC: 17,
     score: 4,
     precipitationMm: 0,
     precipitationProbability: 20,
@@ -134,6 +147,7 @@ export const hourlyWeather: HourlyWeather[] = [
   {
     isoTime: "2026-06-06T21:00",
     time: "21:00",
+    temperatureC: 16,
     score: 3,
     precipitationMm: 0.2,
     precipitationProbability: 30,
