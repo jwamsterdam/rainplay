@@ -2,7 +2,9 @@ import type { Atom, PrimitiveAtom } from "jotai";
 import { appStore } from "./store";
 import {
   locationErrorAtom,
+  locationMenuOpenAtom,
   locationStatusAtom,
+  savedLocationsAtom,
   selectedDayAtom,
   selectedHorizonAtom,
   selectedLocationAtom,
@@ -10,7 +12,9 @@ import {
 
 const debugAtoms = {
   locationErrorAtom,
+  locationMenuOpenAtom,
   locationStatusAtom,
+  savedLocationsAtom,
   selectedDayAtom,
   selectedHorizonAtom,
   selectedLocationAtom,
@@ -45,7 +49,9 @@ export function exposeJotaiDebugStore() {
     },
     snapshot: () => ({
       locationErrorAtom: appStore.get(locationErrorAtom),
+      locationMenuOpenAtom: appStore.get(locationMenuOpenAtom),
       locationStatusAtom: appStore.get(locationStatusAtom),
+      savedLocationsAtom: appStore.get(savedLocationsAtom),
       selectedDayAtom: appStore.get(selectedDayAtom),
       selectedHorizonAtom: appStore.get(selectedHorizonAtom),
       selectedLocationAtom: appStore.get(selectedLocationAtom),

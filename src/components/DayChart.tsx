@@ -8,8 +8,8 @@ type DayChartProps = {
 
 const CHART_WIDTH = 780;
 const CHART_HEIGHT = 500;
-const LEFT = 98;
-const RIGHT = 58;
+const LEFT = 56;
+const RIGHT = 34;
 const TOP = 162;
 const BOTTOM = 64;
 const MAX_MM = 3;
@@ -137,16 +137,13 @@ export function DayChart({ hours }: DayChartProps) {
           ) : null;
         })}
 
-        <text className="score-label" x="24" y="64">
-          Buiten
-        </text>
-
         {hours.map((hour, index) => {
           const x = LEFT + index * slotWidth + slotWidth / 2;
           const barHeight = (hour.precipitationMm / MAX_MM) * plotHeight;
           const y = TOP + plotHeight - barHeight;
-          const showDetail = !isDense || index % 2 === 0 || index === hours.length - 1;
-          const showScore = !isDense || index % 2 === 0 || index === hours.length - 1;
+          const showDetail = !isDense || isWholeHour(hour.isoTime) || index === hours.length - 1;
+          const showScore = !isDense || isWholeHour(hour.isoTime) || index === hours.length - 1;
+          const showTime = isWholeHour(hour.isoTime);
 
           return (
             <g key={hour.time}>
@@ -173,9 +170,9 @@ export function DayChart({ hours }: DayChartProps) {
                   y={y}
                 />
               )}
-              {showDetail && (
+              {showTime && (
                 <text className="time-label" textAnchor="middle" x={x} y={CHART_HEIGHT - 22}>
-                  {hour.time}
+                  {hourLabel(hour)}
                 </text>
               )}
             </g>
@@ -184,4 +181,13 @@ export function DayChart({ hours }: DayChartProps) {
       </svg>
     </div>
   );
+}
+
+function isWholeHour(isoTime: string) {
+  return isoTime.slice(14, 16) === "00";
+}
+
+function hourLabel(hour: HourlyWeather) {
+  if (!hour.time.includes(":")) return hour.time;
+  return String(Number(hour.isoTime.slice(11, 13)));
 }

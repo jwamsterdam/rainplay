@@ -4,6 +4,7 @@ type SegmentedControlProps<T extends string> = {
   value: T;
   onChange: (value: T) => void;
   compact?: boolean;
+  disabled?: boolean;
   displayLabels?: Partial<Record<T, string>>;
 };
 
@@ -13,10 +14,19 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   compact = false,
+  disabled = false,
   displayLabels,
 }: SegmentedControlProps<T>) {
+  const className = [
+    "segmented",
+    compact ? "segmented-compact" : "",
+    disabled ? "segmented-disabled" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={compact ? "segmented segmented-compact" : "segmented"} role="group" aria-label={label}>
+    <div aria-disabled={disabled} aria-label={label} className={className} role="group">
       {options.map((option) => {
         const displayLabel = displayLabels?.[option] ?? option;
 
@@ -25,8 +35,11 @@ export function SegmentedControl<T extends string>({
             aria-label={option}
             aria-pressed={option === value}
             className={option === value ? "segment active" : "segment"}
+            disabled={disabled}
             key={option}
-            onClick={() => onChange(option)}
+            onClick={() => {
+              if (!disabled) onChange(option);
+            }}
             title={option}
             type="button"
           >
