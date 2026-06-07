@@ -38,6 +38,7 @@ export async function geocodeLocation(query: string): Promise<ForecastLocation> 
   if (!result) throw new Error("Locatie niet gevonden.");
 
   return {
+    id: `manual-${Date.now()}`,
     name: displayNameFor(result),
     latitude: roundCoordinate(result.geometry.location.lat),
     longitude: roundCoordinate(result.geometry.location.lng),

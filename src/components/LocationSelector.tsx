@@ -3,6 +3,8 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import type { ForecastLocation } from "../api/openMeteo";
 import { geocodeLocation, hasGoogleMapsKey } from "../api/googleMaps";
 import {
+  defaultLocation,
+  defaultLocations,
   locationMenuOpenAtom,
   locationStatusAtom,
   savedLocationsAtom,
@@ -11,7 +13,7 @@ import {
 import { LocationArrow } from "./WeatherIcons";
 
 type LocationSelectorProps = {
-  onUseCurrentLocation: () => void;
+  onUseCurrentLocation: () => Promise<void>;
 };
 
 const emptyForm = {
@@ -27,6 +29,7 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const gpsLocation = selectedLocation.source === "gps" ? selectedLocation : null;
 
   const addLocation = async () => {
     setFormError(null);
@@ -66,38 +69,67 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
         type="button"
       >
         <span>{selectedLocation.name}</span>
+        {selectedLocation.source === "gps" ? <LocationArrow className="location-button-gps" /> : null}
         <span className="chevron" aria-hidden="true" />
-        <LocationArrow className="location-arrow" />
       </button>
 
       {isOpen ? (
         <div className="location-menu" role="menu">
           <button
-            className="location-menu-item"
+            className={gpsLocation ? "location-menu-current active" : "location-menu-current"}
             disabled={locationStatus === "locating"}
-            onClick={() => {
-              onUseCurrentLocation();
-              setMenuOpen(false);
+            onClick={async () => {
+              try {
+                await onUseCurrentLocation();
+                setMenuOpen(false);
+              } catch {
+                // The hook already exposes the user-facing error state.
+              }
             }}
             role="menuitem"
             type="button"
           >
-            Gebruik huidige locatie
+            <span>
+              <strong>{gpsLocation?.name ?? "Huidige locatie"}</strong>
+              <small>{locationStatus === "locating" ? "Locatie ophalen..." : "GPS locatie"}</small>
+            </span>
+            <LocationArrow className="location-menu-arrow" />
           </button>
 
           {savedLocations.map((location) => (
-            <button
-              className={isSameLocation(location, selectedLocation) ? "location-menu-item active" : "location-menu-item"}
-              key={`${location.name}-${location.latitude}-${location.longitude}`}
-              onClick={() => {
-                setSelectedLocation(location);
-                setMenuOpen(false);
-              }}
-              role="menuitem"
-              type="button"
-            >
-              {location.name}
-            </button>
+            <div className="location-menu-row" key={locationKey(location)}>
+              <button
+                className={isSameLocation(location, selectedLocation) ? "location-menu-item active" : "location-menu-item"}
+                onClick={() => {
+                  setSelectedLocation(location);
+                  setMenuOpen(false);
+                }}
+                role="menuitem"
+                type="button"
+              >
+                {location.name}
+              </button>
+              {canDeleteLocation(location) ? (
+                <button
+                  aria-label={`${location.name} verwijderen`}
+                  className="location-delete-button"
+                  onClick={() => {
+                    setSavedLocations((locations) => {
+                      const nextLocations = locations.filter((savedLocation) => !isSameLocation(savedLocation, location));
+
+                      if (isSameLocation(selectedLocation, location)) {
+                        setSelectedLocation(nextLocations[0] ?? defaultLocation);
+                      }
+
+                      return nextLocations;
+                    });
+                  }}
+                  type="button"
+                >
+                  Verwijder
+                </button>
+              ) : null}
+            </div>
           ))}
 
           <form
@@ -127,5 +159,14 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
 }
 
 function isSameLocation(a: ForecastLocation, b: ForecastLocation) {
+  if (a.id && b.id) return a.id === b.id;
   return a.name === b.name && a.latitude === b.latitude && a.longitude === b.longitude;
+}
+
+function locationKey(location: ForecastLocation) {
+  return location.id ?? `${location.name}-${location.latitude}-${location.longitude}`;
+}
+
+function canDeleteLocation(location: ForecastLocation) {
+  return location.source === "manual";
 }

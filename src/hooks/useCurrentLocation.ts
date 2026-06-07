@@ -13,51 +13,57 @@ export function useCurrentLocation() {
     if (!("geolocation" in navigator)) {
       setStatus("unsupported");
       setError("Locatie wordt niet ondersteund door deze browser.");
-      return;
+      return Promise.reject(new Error("Locatie wordt niet ondersteund door deze browser."));
     }
 
     setStatus("locating");
     setError(null);
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const latitude = roundCoordinate(position.coords.latitude);
-        const longitude = roundCoordinate(position.coords.longitude);
-        let name = "Huidige locatie";
+    return new Promise<void>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const latitude = roundCoordinate(position.coords.latitude);
+          const longitude = roundCoordinate(position.coords.longitude);
+          let name = "Huidige locatie";
 
-        if (hasGoogleMapsKey()) {
-          try {
-            name = await reverseGeocodeLocation(latitude, longitude);
-          } catch {
-            name = "Huidige locatie";
+          if (hasGoogleMapsKey()) {
+            try {
+              name = await reverseGeocodeLocation(latitude, longitude);
+            } catch {
+              name = "Huidige locatie";
+            }
           }
-        }
 
-        setLocation({
-          name,
-          latitude,
-          longitude,
-          source: "gps",
-          updatedAt: Date.now(),
-        });
-        setStatus("ready");
-      },
-      (error) => {
-        if (error.code === error.PERMISSION_DENIED) {
-          setStatus("denied");
-          setError("Geen locatietoegang.");
-          return;
-        }
+          setLocation({
+            id: "gps",
+            name,
+            latitude,
+            longitude,
+            source: "gps",
+            updatedAt: Date.now(),
+          });
+          setStatus("ready");
+          resolve();
+        },
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            setStatus("denied");
+            setError("Geen locatietoegang.");
+            reject(new Error("Geen locatietoegang."));
+            return;
+          }
 
-        setStatus("error");
-        setError("Locatie ophalen lukte niet.");
-      },
-      {
-        enableHighAccuracy: false,
-        maximumAge: 1000 * 60 * 20,
-        timeout: 1000 * 12,
-      },
-    );
+          setStatus("error");
+          setError("Locatie ophalen lukte niet.");
+          reject(new Error("Locatie ophalen lukte niet."));
+        },
+        {
+          enableHighAccuracy: false,
+          maximumAge: 1000 * 60 * 20,
+          timeout: 1000 * 12,
+        },
+      );
+    });
   }, [setError, setLocation, setStatus]);
 
   useEffect(() => {

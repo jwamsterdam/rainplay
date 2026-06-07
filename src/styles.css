@@ -117,6 +117,13 @@ button {
   transform: rotate(20deg);
 }
 
+.location-button-gps {
+  width: 21px;
+  height: 21px;
+  color: var(--color-accent);
+  transform: rotate(20deg);
+}
+
 .location-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -132,6 +139,7 @@ button {
   backdrop-filter: blur(18px);
 }
 
+.location-menu-current,
 .location-menu-item,
 .location-add-button {
   min-height: 36px;
@@ -144,6 +152,49 @@ button {
   text-align: left;
 }
 
+.location-menu-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 6px 10px 6px 12px;
+  background: var(--color-control);
+}
+
+.location-menu-current span {
+  display: grid;
+  gap: 1px;
+}
+
+.location-menu-current strong {
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.location-menu-current small {
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 560;
+}
+
+.location-menu-current.active {
+  background: var(--color-best);
+}
+
+.location-menu-arrow {
+  width: 20px;
+  height: 20px;
+  color: var(--color-accent);
+  transform: rotate(20deg);
+}
+
+.location-menu-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
 .location-menu-item {
   padding: 0 11px;
 }
@@ -154,6 +205,17 @@ button {
 
 .location-menu-item:disabled {
   color: var(--color-ink-soft);
+}
+
+.location-delete-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(244, 246, 248, 0.92);
+  color: var(--color-ink-soft);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .location-form {

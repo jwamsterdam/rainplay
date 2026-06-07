@@ -1,6 +1,7 @@
 import type { ForecastPoint, HourlyWeather, WeatherKind } from "../types";
 
 export type ForecastLocation = {
+  id?: string;
   name: string;
   latitude: number;
   longitude: number;

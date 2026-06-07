@@ -7,12 +7,7 @@ export const horizonOptions: HorizonOption[] = ["Hele dag", "+6 uur", "+2 uur"];
 
 export const defaultLocations: ForecastLocation[] = [
   {
-    name: "Haarlem",
-    latitude: 52.3948,
-    longitude: 4.6382,
-    source: "default",
-  },
-  {
+    id: "annecy",
     name: "Annecy",
     latitude: 45.8992,
     longitude: 6.1294,
@@ -20,13 +15,21 @@ export const defaultLocations: ForecastLocation[] = [
   },
 ];
 
+export const defaultLocation: ForecastLocation = {
+  id: "haarlem-default",
+  name: "Haarlem",
+  latitude: 52.3948,
+  longitude: 4.6382,
+  source: "default",
+};
+
 export const selectedDayAtom = atom<DayOption>("Vandaag");
 selectedDayAtom.debugLabel = "selectedDayAtom";
 
 export const selectedHorizonAtom = atom<HorizonOption>("Hele dag");
 selectedHorizonAtom.debugLabel = "selectedHorizonAtom";
 
-export const selectedLocationAtom = atom<ForecastLocation>(defaultLocations[0]);
+export const selectedLocationAtom = atom<ForecastLocation>(defaultLocation);
 selectedLocationAtom.debugLabel = "selectedLocationAtom";
 
 export const savedLocationsAtom = atom<ForecastLocation[]>(defaultLocations);
