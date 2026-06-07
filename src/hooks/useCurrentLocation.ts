@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useSetAtom } from "jotai";
+import { hasGoogleMapsKey, reverseGeocodeLocation } from "../api/googleMaps";
 import { locationErrorAtom, locationStatusAtom, selectedLocationAtom } from "../state/weatherAtoms";
 
 export function useCurrentLocation() {
@@ -19,11 +20,23 @@ export function useCurrentLocation() {
     setError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
+        const latitude = roundCoordinate(position.coords.latitude);
+        const longitude = roundCoordinate(position.coords.longitude);
+        let name = "Huidige locatie";
+
+        if (hasGoogleMapsKey()) {
+          try {
+            name = await reverseGeocodeLocation(latitude, longitude);
+          } catch {
+            name = "Huidige locatie";
+          }
+        }
+
         setLocation({
-          name: "Huidige locatie",
-          latitude: roundCoordinate(position.coords.latitude),
-          longitude: roundCoordinate(position.coords.longitude),
+          name,
+          latitude,
+          longitude,
           source: "gps",
           updatedAt: Date.now(),
         });
