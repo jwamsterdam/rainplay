@@ -146,6 +146,7 @@ function toHourlyWeather(data: OpenMeteoResponse, index: number, isoTime: string
     precipitationProbability,
     cloudCover,
     radiation,
+    isDay,
     kind: weatherKind(weatherCode, precipitationMm, cloudCover, radiation, isDay),
   };
 }
@@ -181,6 +182,7 @@ function toMinutelyWeather(data: OpenMeteoResponse, index: number, isoTime: stri
     precipitationProbability,
     cloudCover,
     radiation,
+    isDay,
     kind: weatherKind(weatherCode, precipitationMm, cloudCover, radiation, isDay),
   };
 }

@@ -1,6 +1,13 @@
 import type { HorizonOption, HourlyWeather } from "../types";
 import { skyColor } from "../lib/chart";
+import { weatherViewSettings } from "../config/weatherSettings";
 import { WeatherIcon } from "./WeatherIcons";
+
+type AxisLabel = {
+  anchor: "start" | "middle" | "end";
+  text: string;
+  x: number;
+};
 
 type DayChartProps = {
   hours: HourlyWeather[];
@@ -39,7 +46,6 @@ export function DayChart({ hours, horizon }: DayChartProps) {
 
   const plotWidth = CHART_WIDTH - LEFT - RIGHT;
   const plotHeight = CHART_HEIGHT - TOP - BOTTOM;
-  const isDense = hours.length > 8;
   const times = hours.map((hour) => timestampFor(hour.isoTime));
   const stepMs = inferStepMs(times);
   const axisStart = axisStartFor(times[0], horizon);
@@ -138,35 +144,25 @@ export function DayChart({ hours, horizon }: DayChartProps) {
         <polyline className="temperature-line" fill="none" points={temperaturePoints} />
         {hours.map((hour, index) => {
           const x = xForPoint(index);
-          const showPoint = shouldShowPoint(index, horizon, isDense);
-
-          return showPoint ? (
-            <circle className="temperature-point" cx={x} cy={temperatureY(hour.temperatureC)} key={`temp-${hour.isoTime}`} r="3.5" />
-          ) : null;
+          return <circle className="temperature-point" cx={x} cy={temperatureY(hour.temperatureC)} key={`temp-${hour.isoTime}`} r="3.5" />;
         })}
 
         {hours.map((hour, index) => {
           const x = xForPoint(index);
           const barHeight = (hour.precipitationMm / MAX_MM) * plotHeight;
           const y = TOP + plotHeight - barHeight;
-          const showDetail = shouldShowPoint(index, horizon, isDense);
-          const showScore = shouldShowPoint(index, horizon, isDense);
 
           return (
             <g key={hour.isoTime}>
-              {showScore && (
-                <g className="score-badge">
-                  <circle cx={x} cy="58" fill={scoreColor(hour.score)} r="22" />
-                  <text className="score-badge-text" textAnchor="middle" x={x} y="66">
-                    {hour.score}
-                  </text>
-                </g>
-              )}
-              {showDetail && (
-                <foreignObject height="36" width="36" x={x - 18} y="88">
-                  <WeatherIcon className="chart-weather-icon" kind={hour.kind} />
-                </foreignObject>
-              )}
+              <g className="score-badge">
+                <circle cx={x} cy="58" fill={scoreColor(hour.score)} r="22" />
+                <text className="score-badge-text" textAnchor="middle" x={x} y="66">
+                  {hour.score}
+                </text>
+              </g>
+              <foreignObject height="36" width="36" x={x - 18} y="88">
+                <WeatherIcon className="chart-weather-icon" kind={hour.kind} />
+              </foreignObject>
               {hour.precipitationMm > 0 && (
                 <rect
                   className="rain-bar"
@@ -182,7 +178,7 @@ export function DayChart({ hours, horizon }: DayChartProps) {
         })}
 
         {axisLabels.map((label) => (
-          <text className="time-label" key={`${label.text}-${label.x}`} textAnchor="middle" x={label.x} y={CHART_HEIGHT - 22}>
+          <text className="time-label" key={`${label.text}-${label.x}`} textAnchor={label.anchor} x={label.x} y={CHART_HEIGHT - 22}>
             {label.text}
           </text>
         ))}
@@ -191,40 +187,46 @@ export function DayChart({ hours, horizon }: DayChartProps) {
   );
 }
 
-function shouldShowPoint(_index: number, _horizon: HorizonOption, _isDense: boolean) {
-  return true;
-}
-
 function timeAxisLabels(
   hours: HourlyWeather[],
   horizon: HorizonOption,
   axisStart: number,
   axisEnd: number,
-) {
+): AxisLabel[] {
   if (!hours[0]?.time.includes(":")) {
     const stepMs = inferStepMs(hours.map((hour) => timestampFor(hour.isoTime)));
     return hours.map((hour) => ({
+      anchor: "middle",
       text: hour.time,
       x: axisPosition(timestampFor(hour.isoTime) + stepMs / 2, axisStart, axisEnd),
     }));
   }
 
-  if (horizon === "+2 uur") return intervalLabels(axisStart, axisEnd, 15 * MINUTE, true);
-  if (horizon === "+6 uur") return intervalLabels(axisStart, axisEnd, 60 * MINUTE, true);
+  if (horizon === "+2 uur") return intervalLabels(axisStart, axisEnd, 15 * MINUTE, true, "bounds");
+  if (horizon === "+6 uur") return intervalLabels(axisStart, axisEnd, 60 * MINUTE, true, "bounds");
 
-  return hours
-    .filter((hour) => hour.isoTime.slice(14, 16) === "00")
-    .map((hour) => ({
-      text: String(Number(hour.isoTime.slice(11, 13))),
-      x: axisPosition(timestampFor(hour.isoTime) + inferStepMs(hours.map((item) => timestampFor(item.isoTime))) / 2, axisStart, axisEnd),
-    }));
+  return intervalLabels(axisStart, axisEnd, weatherViewSettings.dayChart.hourStep * 60 * MINUTE, false, "bounds");
 }
 
-function intervalLabels(axisStart: number, axisEnd: number, intervalMs: number, showMinutes: boolean) {
-  const labels: Array<{ text: string; x: number }> = [];
+function intervalLabels(
+  axisStart: number,
+  axisEnd: number,
+  intervalMs: number,
+  showMinutes: boolean,
+  align: "bounds" | "middle",
+): AxisLabel[] {
+  const labels: AxisLabel[] = [];
 
   for (let timestamp = axisStart; timestamp <= axisEnd; timestamp += intervalMs) {
+    const isFirst = timestamp === axisStart;
+    const isLast = timestamp === axisEnd;
+
+    if (!showMinutes && isLast && timestamp > axisStart && new Date(timestamp).getHours() === 0) {
+      continue;
+    }
+
     labels.push({
+      anchor: align === "bounds" && isFirst ? "start" : align === "bounds" && isLast ? "end" : align === "bounds" ? "start" : "middle",
       text: formatAxisTime(timestamp, showMinutes),
       x: axisPosition(timestamp, axisStart, axisEnd),
     });
@@ -252,17 +254,29 @@ function inferStepMs(times: number[]) {
 
 function axisStartFor(firstTime: number, horizon: HorizonOption) {
   if (horizon === "+2 uur" || horizon === "+6 uur") return floorToHour(firstTime);
+  if (horizon === "Hele dag") return configuredDayStart(firstTime);
   return firstTime;
 }
 
 function axisEndFor(axisStart: number, endTime: number, horizon: HorizonOption) {
   if (horizon === "+2 uur") return axisStart + 2 * 60 * MINUTE;
   if (horizon === "+6 uur") return axisStart + 6 * 60 * MINUTE;
+  if (horizon === "Hele dag") {
+    const { endHour, startHour } = weatherViewSettings.dayChart;
+    return axisStart + (endHour - startHour) * 60 * MINUTE;
+  }
   return endTime;
 }
 
 function floorToHour(timestamp: number) {
   return Math.floor(timestamp / (60 * MINUTE)) * 60 * MINUTE;
+}
+
+function configuredDayStart(timestamp: number) {
+  const date = new Date(timestamp);
+  date.setHours(weatherViewSettings.dayChart.startHour, 0, 0, 0);
+
+  return date.getTime();
 }
 
 function formatAxisTime(timestamp: number, showMinutes: boolean) {

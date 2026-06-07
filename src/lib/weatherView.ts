@@ -1,4 +1,5 @@
 import type { DayOption, ForecastPoint, HorizonOption, HourlyWeather } from "../types";
+import { weatherViewSettings } from "../config/weatherSettings";
 
 export function visibleHoursForHorizon(hours: HourlyWeather[], horizon: HorizonOption) {
   if (horizon === "+2 uur") return hours.slice(0, 3);
@@ -49,7 +50,7 @@ function hoursForDay(hours: HourlyWeather[], day: DayOption) {
   const targetDate = dateForDayOption(hours, day);
   if (!targetDate) return hours;
 
-  return bestDaytimeHours(hours.filter((hour) => hour.isoTime.startsWith(targetDate)));
+  return configuredDayHours(hours.filter((hour) => hour.isoTime.startsWith(targetDate)));
 }
 
 function dateForDayOption(hours: HourlyWeather[], day: Exclude<DayOption, "Week">) {
@@ -90,17 +91,24 @@ function formatDutchDate(dateString: string) {
     .replace(".", "");
 }
 
-function bestDaytimeHours(hours: HourlyWeather[]) {
+function configuredDayHours(hours: HourlyWeather[]) {
+  const { endHour, hourStep, startHour } = weatherViewSettings.dayChart;
+
   return hours.filter((hour) => {
     const numericHour = Number(hour.time.slice(0, 2));
-    return numericHour >= 8 && numericHour <= 18;
+    const inRange = endHour >= 24
+      ? numericHour >= startHour && numericHour < 24
+      : numericHour >= startHour && numericHour <= endHour;
+    const matchesStep = (numericHour - startHour) % hourStep === 0;
+
+    return inRange && matchesStep;
   });
 }
 
 function weekDaySummaries(hours: HourlyWeather[]) {
   const groups = new Map<string, HourlyWeather[]>();
 
-  for (const hour of bestDaytimeHours(hours)) {
+  for (const hour of configuredDayHours(hours)) {
     const date = hour.isoTime.slice(0, 10);
     groups.set(date, [...(groups.get(date) ?? []), hour]);
   }
@@ -113,6 +121,7 @@ function summarizeDay(date: string, dayHours: HourlyWeather[]): HourlyWeather {
   const precipitationSum = dayHours.reduce((total, hour) => total + hour.precipitationMm, 0);
   const averageCloudCover = average(dayHours.map((hour) => hour.cloudCover));
   const averageRadiation = average(dayHours.map((hour) => hour.radiation));
+  const daytimeHours = dayHours.filter((hour) => hour.isDay).length;
   const rainyHours = dayHours.filter((hour) => hour.kind === "rain").length;
   const sunnyHours = dayHours.filter((hour) => hour.kind === "sun").length;
   const partlyHours = dayHours.filter((hour) => hour.kind === "partly").length;
@@ -127,6 +136,7 @@ function summarizeDay(date: string, dayHours: HourlyWeather[]): HourlyWeather {
     precipitationProbability: Math.max(...dayHours.map((hour) => hour.precipitationProbability)),
     cloudCover: averageCloudCover,
     radiation: averageRadiation,
+    isDay: daytimeHours >= dayHours.length / 2,
     kind:
       rainyHours >= 3
         ? "rain"

@@ -13,6 +13,7 @@ export type HourlyWeather = {
   precipitationProbability: number;
   cloudCover: number;
   radiation: number;
+  isDay: boolean;
   kind: WeatherKind;
 };
 

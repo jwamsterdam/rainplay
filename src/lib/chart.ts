@@ -1,6 +1,7 @@
 import type { HourlyWeather } from "../types";
 
 export function skyColor(hour: HourlyWeather): string {
+  if (!hour.isDay) return "var(--color-sky-night)";
   if (hour.kind === "rain") return "var(--color-sky-rain)";
   if (hour.kind === "cloud") return "var(--color-sky-cloud)";
   if (hour.kind === "partly") return "var(--color-sky-partly)";

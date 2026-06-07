@@ -1,6 +1,6 @@
 import type { HourlyWeather } from "../types";
 
-export const hourlyWeather: HourlyWeather[] = [
+const baseHourlyWeather = [
   {
     isoTime: "2026-06-06T08:00",
     time: "08:00",
@@ -155,4 +155,9 @@ export const hourlyWeather: HourlyWeather[] = [
     radiation: 0,
     kind: "rain",
   },
-];
+] satisfies Array<Omit<HourlyWeather, "isDay">>;
+
+export const hourlyWeather: HourlyWeather[] = baseHourlyWeather.map((hour) => ({
+  ...hour,
+  isDay: Number(hour.time.slice(0, 2)) >= 7 && Number(hour.time.slice(0, 2)) <= 20,
+}));
