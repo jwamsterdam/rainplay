@@ -5,7 +5,7 @@ import { SegmentedControl } from "../components/SegmentedControl";
 import { LocationArrow } from "../components/WeatherIcons";
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
 import { bestStartTime } from "../lib/chart";
-import { visibleHoursForSelection } from "../lib/weatherView";
+import { headerDateLabel, visibleHoursForSelection, visiblePointsForTodayHorizon } from "../lib/weatherView";
 import { useForecastQuery } from "../queries/weather";
 import {
   dayOptions,
@@ -26,13 +26,16 @@ export function WeatherScreen() {
   const { refreshLocation } = useCurrentLocation();
   const forecast = useForecastQuery(location);
   const hourly = forecast.data?.hourly ?? [];
+  const minutely15 = forecast.data?.minutely15 ?? [];
   const showHorizonSelector = day === "Vandaag";
 
   const visibleHours = useMemo(() => {
+    if (day === "Vandaag") return visiblePointsForTodayHorizon(hourly, minutely15, horizon);
     return visibleHoursForSelection(hourly, day, horizon);
-  }, [day, hourly, horizon]);
+  }, [day, hourly, horizon, minutely15]);
 
   const bestTime = useMemo(() => bestStartTime(visibleHours), [visibleHours]);
+  const selectedDateLabel = useMemo(() => headerDateLabel(hourly, day), [day, hourly]);
   const temperature = forecast.data?.currentTemperature ?? 18;
 
   return (
@@ -52,7 +55,10 @@ export function WeatherScreen() {
         {locationError ? <p className="location-status">{locationError}</p> : null}
 
         <div className="hero-copy">
-          <p className="eyebrow">{day}</p>
+          <p className="eyebrow">
+            {day}
+            {selectedDateLabel ? <span>- {selectedDateLabel}</span> : null}
+          </p>
           <h1>{temperature}&deg;</h1>
           <p className="hero-advice">Buiten vanaf {bestTime}</p>
           <p className="hero-subtitle">Ochtend nat - middag bijna droog</p>

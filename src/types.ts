@@ -14,3 +14,5 @@ export type HourlyWeather = {
   radiation: number;
   kind: WeatherKind;
 };
+
+export type ForecastPoint = HourlyWeather;

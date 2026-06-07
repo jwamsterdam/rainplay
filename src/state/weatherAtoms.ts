@@ -8,7 +8,7 @@ export const horizonOptions: HorizonOption[] = ["Hele dag", "+6 uur", "+2 uur"];
 export const selectedDayAtom = atom<DayOption>("Vandaag");
 selectedDayAtom.debugLabel = "selectedDayAtom";
 
-export const selectedHorizonAtom = atom<HorizonOption>("+6 uur");
+export const selectedHorizonAtom = atom<HorizonOption>("Hele dag");
 selectedHorizonAtom.debugLabel = "selectedHorizonAtom";
 
 export const selectedLocationAtom = atom<ForecastLocation>({

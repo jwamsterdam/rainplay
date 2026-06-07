@@ -6,13 +6,20 @@ type DayChartProps = {
   hours: HourlyWeather[];
 };
 
-const CHART_WIDTH = 760;
+const CHART_WIDTH = 780;
 const CHART_HEIGHT = 500;
-const LEFT = 86;
-const RIGHT = 8;
-const TOP = 82;
-const BOTTOM = 58;
+const LEFT = 98;
+const RIGHT = 22;
+const TOP = 162;
+const BOTTOM = 64;
 const MAX_MM = 3;
+
+function scoreColor(score: number) {
+  if (score >= 8) return "var(--color-score-good)";
+  if (score >= 6) return "var(--color-score-ok)";
+  if (score >= 4) return "var(--color-score-low)";
+  return "var(--color-score-bad)";
+}
 
 export function DayChart({ hours }: DayChartProps) {
   if (hours.length === 0) {
@@ -53,6 +60,23 @@ export function DayChart({ hours }: DayChartProps) {
           />
         ))}
 
+        <line
+          stroke="#cfd7df"
+          strokeWidth="1"
+          x1={LEFT}
+          x2={CHART_WIDTH - RIGHT}
+          y1="24"
+          y2="24"
+        />
+        <line
+          stroke="#cfd7df"
+          strokeWidth="1"
+          x1={CHART_WIDTH - RIGHT}
+          x2={CHART_WIDTH - RIGHT}
+          y1="24"
+          y2={CHART_HEIGHT - BOTTOM}
+        />
+
         {[0, 1, 2, 3].map((tick) => {
           const y = TOP + plotHeight - (tick / MAX_MM) * plotHeight;
           return (
@@ -73,8 +97,8 @@ export function DayChart({ hours }: DayChartProps) {
           );
         })}
 
-        <text className="score-label" x="22" y="44">
-          Score
+        <text className="score-label" x="24" y="64">
+          Buiten
         </text>
 
         {hours.map((hour, index) => {
@@ -82,14 +106,20 @@ export function DayChart({ hours }: DayChartProps) {
           const barHeight = (hour.precipitationMm / MAX_MM) * plotHeight;
           const y = TOP + plotHeight - barHeight;
           const showDetail = !isDense || index % 2 === 0 || index === hours.length - 1;
+          const showScore = !isDense || index % 2 === 0 || index === hours.length - 1;
 
           return (
             <g key={hour.time}>
-              <text className="score-number" textAnchor="middle" x={x} y="44">
-                {hour.score}
-              </text>
+              {showScore && (
+                <g className="score-badge">
+                  <circle cx={x} cy="58" fill={scoreColor(hour.score)} r="22" />
+                  <text className="score-badge-text" textAnchor="middle" x={x} y="66">
+                    {hour.score}
+                  </text>
+                </g>
+              )}
               {showDetail && (
-                <foreignObject height="46" width="46" x={x - 23} y="72">
+                <foreignObject height="36" width="36" x={x - 18} y="88">
                   <WeatherIcon className="chart-weather-icon" kind={hour.kind} />
                 </foreignObject>
               )}

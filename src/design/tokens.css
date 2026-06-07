@@ -17,6 +17,10 @@
   --color-accent: #1d7eea;
   --color-rain: #78b4f8;
   --color-best: #fff1c9;
+  --color-score-good: #93bf00;
+  --color-score-ok: #f58a1f;
+  --color-score-low: #f3b329;
+  --color-score-bad: #e15d4f;
   --color-sky-rain: #f1f5f9;
   --color-sky-cloud: #f5f8fb;
   --color-sky-partly: #eef8ff;

@@ -1,4 +1,4 @@
-import type { HourlyWeather, WeatherKind } from "../types";
+import type { ForecastPoint, HourlyWeather, WeatherKind } from "../types";
 
 export type ForecastLocation = {
   name: string;
@@ -11,6 +11,7 @@ export type ForecastLocation = {
 export type Forecast = {
   currentTemperature: number;
   hourly: HourlyWeather[];
+  minutely15: ForecastPoint[];
 };
 
 type OpenMeteoResponse = {
@@ -39,6 +40,16 @@ type OpenMeteoResponse = {
     weather_code: number[];
     wind_speed_10m: number[];
     wind_gusts_10m: number[];
+    is_day: number[];
+  };
+  minutely_15?: {
+    time: string[];
+    precipitation: number[];
+    rain: number[];
+    showers: number[];
+    weather_code: number[];
+    cloud_cover: number[];
+    shortwave_radiation: number[];
     is_day: number[];
   };
 };
@@ -75,7 +86,17 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
       "wind_gusts_10m",
       "is_day",
     ].join(","),
-    forecast_days: "4",
+    minutely_15: [
+      "precipitation",
+      "rain",
+      "showers",
+      "weather_code",
+      "cloud_cover",
+      "shortwave_radiation",
+      "is_day",
+    ].join(","),
+    forecast_minutely_15: "24",
+    forecast_days: "7",
     timezone: "auto",
   });
 
@@ -90,6 +111,7 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
   return {
     currentTemperature: Math.round(data.current.temperature_2m),
     hourly: data.hourly.time.map((time, index) => toHourlyWeather(data, index, time)),
+    minutely15: data.minutely_15?.time.map((time, index) => toMinutelyWeather(data, index, time)) ?? [],
   };
 }
 
@@ -123,6 +145,55 @@ function toHourlyWeather(data: OpenMeteoResponse, index: number, isoTime: string
     radiation,
     kind: weatherKind(weatherCode, precipitationMm, cloudCover, radiation, isDay),
   };
+}
+
+function toMinutelyWeather(data: OpenMeteoResponse, index: number, isoTime: string): ForecastPoint {
+  const nearestHourlyIndex = nearestHourlyIndexFor(data.hourly.time, isoTime);
+  const precipitationMm = valueAt(data.minutely_15?.precipitation ?? [], index);
+  const cloudCover = valueAt(data.minutely_15?.cloud_cover ?? [], index);
+  const radiation = valueAt(data.minutely_15?.shortwave_radiation ?? [], index);
+  const weatherCode = valueAt(data.minutely_15?.weather_code ?? [], index);
+  const isDay = valueAt(data.minutely_15?.is_day ?? [], index) === 1;
+  const precipitationProbability = valueAt(data.hourly.precipitation_probability, nearestHourlyIndex);
+  const windSpeed = valueAt(data.hourly.wind_speed_10m, nearestHourlyIndex);
+  const windGusts = valueAt(data.hourly.wind_gusts_10m, nearestHourlyIndex);
+  const apparentTemperature = valueAt(data.hourly.apparent_temperature, nearestHourlyIndex);
+
+  return {
+    isoTime,
+    time: formatHour(isoTime),
+    score: outdoorScore({
+      apparentTemperature,
+      cloudCover,
+      isDay,
+      precipitationMm,
+      precipitationProbability,
+      radiation,
+      windGusts,
+      windSpeed,
+    }),
+    precipitationMm,
+    precipitationProbability,
+    cloudCover,
+    radiation,
+    kind: weatherKind(weatherCode, precipitationMm, cloudCover, radiation, isDay),
+  };
+}
+
+function nearestHourlyIndexFor(hourlyTimes: string[], isoTime: string): number {
+  const target = new Date(isoTime).getTime();
+  let nearestIndex = 0;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  hourlyTimes.forEach((hourlyTime, index) => {
+    const distance = Math.abs(new Date(hourlyTime).getTime() - target);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index;
+    }
+  });
+
+  return nearestIndex;
 }
 
 function valueAt(values: number[], index: number): number {
