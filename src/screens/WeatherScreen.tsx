@@ -73,7 +73,7 @@ export function WeatherScreen() {
         ) : forecast.isLoading ? (
           <div className="loading-panel">Weer laden</div>
         ) : (
-          <DayChart hours={visibleHours} />
+          <DayChart horizon={horizon} hours={visibleHours} />
         )}
 
         <div className="control-stack">
