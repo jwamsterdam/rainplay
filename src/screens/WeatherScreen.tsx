@@ -1,9 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { DayChart } from "../components/DayChart";
 import { DayChartRecharts } from "../components/DayChartRecharts";
 import { LocationSelector } from "../components/LocationSelector";
 import { SegmentedControl } from "../components/SegmentedControl";
+import { SettingsPanel, defaultCellColors } from "../components/SettingsPanel";
+import type { CellColors } from "../components/SettingsPanel";
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
 import { bestOutdoorWindow, bestStartTime, bestWindowLabel, outdoorSummaryLabel } from "../lib/chart";
 import { headerDateLabel, visibleHoursForSelection, visiblePointsForTodayHorizon } from "../lib/weatherView";
@@ -17,8 +19,19 @@ import {
   selectedLocationAtom,
 } from "../state/weatherAtoms";
 
+function GearIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+    </svg>
+  );
+}
+
 export function WeatherScreen() {
   const [day, setDay] = useAtom(selectedDayAtom);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [cellColors, setCellColors] = useState<CellColors>(defaultCellColors);
   const [horizon, setHorizon] = useAtom(selectedHorizonAtom);
   const location = useAtomValue(selectedLocationAtom);
   const locationError = useAtomValue(locationErrorAtom);
@@ -51,6 +64,13 @@ export function WeatherScreen() {
       <section className="weather-hero" aria-label="Huidig weer">
         <LocationSelector onUseCurrentLocation={refreshLocation} />
         {locationError ? <p className="location-status">{locationError}</p> : null}
+        <button
+          className="settings-gear-button"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Instellingen openen"
+        >
+          <GearIcon />
+        </button>
 
         <div className="hero-copy">
           <p className="eyebrow">
@@ -71,7 +91,7 @@ export function WeatherScreen() {
           </span>
         </div>
 
-        <DayChartRecharts hours={visibleHours} horizon={horizon} />
+        <DayChartRecharts hours={visibleHours} horizon={horizon} cellColors={cellColors} />
 
         {forecast.isError ? (
           <div className="loading-panel">Weerdata niet beschikbaar</div>
@@ -101,6 +121,14 @@ export function WeatherScreen() {
 
         <p className="attribution">Weather data by Open-Meteo</p>
       </section>
+
+      {settingsOpen && (
+        <SettingsPanel
+          colors={cellColors}
+          onColorsChange={setCellColors}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </main>
   );
 }

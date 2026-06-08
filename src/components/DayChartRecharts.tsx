@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, Cell } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
+import { defaultCellColors } from "./SettingsPanel";
+import type { CellColors } from "./SettingsPanel";
 
 const RAIN_COLOR = "#78b4f8";
 const TEMP_COLOR = "#f97316";
@@ -11,20 +13,12 @@ const ICON_SCALE = ICON_SIZE / 48;
 type Props = {
   hours: HourlyWeather[];
   horizon: HorizonOption;
+  cellColors?: CellColors;
 };
 
-// Background tint per interval — keyed off the same isDay/kind that picks the icon
-// above it, so the column colour always matches its icon. Night overrides the kind.
-const NIGHT_FILL = "rgba(30, 41, 80, 0.16)";
-const DAY_FILL: Record<WeatherKind, string> = {
-  sun: "rgba(255, 196, 0, 0.14)",
-  partly: "rgba(255, 196, 0, 0.07)",
-  cloud: "rgba(148, 163, 184, 0.13)",
-  rain: "rgba(120, 180, 248, 0.15)",
-};
-
-function cellFill(hour: HourlyWeather): string {
-  return hour.isDay ? DAY_FILL[hour.kind] : NIGHT_FILL;
+function cellFill(hour: HourlyWeather, colors: CellColors): string {
+  if (!hour.isDay) return colors.night;
+  return colors[hour.kind as WeatherKind];
 }
 
 // --- Icon path components (no <svg> wrapper, for use inside Recharts SVG) ---
@@ -103,6 +97,88 @@ function WeatherIconTick(props: { x?: number | string; y?: number | string; payl
   );
 }
 
+// --- Cycling score algorithm ---
+
+// IJkpunten:
+//   lichte regen            → ~5  (lichte onvoldoende)
+//   bewolkt + aangenaam     → 7-8
+//   bewolkt + koud          → ~6
+//   zon met bewolking       → 8-9
+//   echt zonnig             → 9-10
+
+function precipitationPenalty(mm: number): number {
+  if (mm <= 0)    return 0;
+  if (mm <= 0.2)  return 2.5;  // motregen  → ~5-6 afhankelijk van icoon
+  if (mm <= 0.5)  return 3.5;  // drizzle   → ~4-5
+  if (mm <= 1)    return 6;    // licht nat → ~2-3
+  if (mm <= 2)    return 8;    // matig     → ~1
+  return 10;                   // zwaar     → 0
+}
+
+function temperaturePenalty(c: number): number {
+  if (c >= 14 && c <= 22) return 0;   // ideaal
+  if (c >= 12)             return 1;   // fris maar prima
+  if (c >= 8)              return 2;   // koud voor wielrenner
+  if (c >= 4)              return 3;   // erg koud
+  if (c > 22 && c <= 26)   return 0.5;
+  if (c > 26 && c <= 30)   return 1.5;
+  return 4;                            // <4°C of >30°C
+}
+
+function kindPenalty(kind: WeatherKind): number {
+  if (kind === "sun")    return 0;   // ideaal
+  if (kind === "partly") return 1;   // zon met bewolking → 8-9
+  if (kind === "cloud")  return 2;   // bewolkt           → 7-8
+  return 2;                          // rain icon: extra aftrek → regen altijd ≤5
+}
+
+function cyclingScore(hour: HourlyWeather): number {
+  const raw =
+    10 -
+    precipitationPenalty(hour.precipitationMm) -
+    temperaturePenalty(hour.temperatureC) -
+    kindPenalty(hour.kind);
+  const score = Math.max(0, Math.min(10, Math.round(raw)));
+  // Nacht: altijd maximaal 6 — het blijft donker, hoe droog of warm ook
+  return hour.isDay ? score : Math.min(score, 6);
+}
+
+function scoreColor(score: number): string {
+  if (score >= 8) return "#93bf00";
+  if (score >= 6) return "#f58a1f";
+  if (score >= 4) return "#f3b329";
+  return "#e15d4f";
+}
+
+// --- Score badge custom tick ---
+
+const SCORE_R = 11;
+const SCORE_SIZE = SCORE_R * 2 + 4;
+
+function ScoreTick(props: { x?: number | string; y?: number | string; payload?: { value: string }; scoreMap?: Record<string, number> }) {
+  const x = Number(props.x ?? 0);
+  const y = Number(props.y ?? 0);
+  const score = props.payload && props.scoreMap ? props.scoreMap[props.payload.value] : undefined;
+  if (score === undefined) return null;
+
+  return (
+    <g>
+      <circle cx={x} cy={y - SCORE_R - 1} r={SCORE_R} fill={scoreColor(score)} />
+      <text
+        x={x}
+        y={y - SCORE_R - 1}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill="#fff"
+        fontSize={11}
+        fontWeight={700}
+      >
+        {score}
+      </text>
+    </g>
+  );
+}
+
 // --- Helpers ---
 
 function formatTick(t: string, horizon: HorizonOption): string {
@@ -160,13 +236,15 @@ function useElementSize<T extends HTMLElement>() {
 
 // --- Main component ---
 
-export function DayChartRecharts({ hours, horizon }: Props) {
+export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
   const [showTemp, setShowTemp] = useState(true);
   const [showRain, setShowRain] = useState(true);
   const [showIcons, setShowIcons] = useState(true);
   const [tempMin, tempMax] = tempDomain(hours);
+  const colors = cellColors ?? defaultCellColors;
 
   const kindMap: KindMap = Object.fromEntries(hours.map(h => [h.time, h.kind]));
+  const scoreMap: Record<string, number> = Object.fromEntries(hours.map(h => [h.time, cyclingScore(h)]));
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
 
   return (
@@ -179,8 +257,25 @@ export function DayChartRecharts({ hours, horizon }: Props) {
 
       <div ref={shellRef} className="chart-shell" style={{ height: "clamp(224px, 31dvh, 276px)" }}>
         {width > 0 && height > 0 && (
-          <ComposedChart width={width} height={height} data={hours} margin={{ top: showIcons ? 32 : 16, right: 0, bottom: 8, left: 4 }} barCategoryGap="0%">
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <ComposedChart width={width} height={height} data={hours} margin={{ top: showIcons ? SCORE_SIZE + ICON_SIZE + 10 : SCORE_SIZE + 6, right: 0, bottom: 8, left: 4 }} barCategoryGap="0%">
+            <CartesianGrid
+              strokeDasharray="4 6"
+              stroke="#dce3ea"
+              strokeWidth={1}
+              vertical={false}
+            />
+
+            {/* Score badges — always visible */}
+            <XAxis
+              xAxisId="scores"
+              dataKey="time"
+              orientation="top"
+              height={SCORE_SIZE}
+              tick={<ScoreTick scoreMap={scoreMap} />}
+              axisLine={false}
+              tickLine={false}
+              interval={0}
+            />
 
             {/* Icon row above the chart */}
             {showIcons && (
@@ -200,8 +295,10 @@ export function DayChartRecharts({ hours, horizon }: Props) {
             <XAxis
               xAxisId="labels"
               dataKey="time"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "#697586" }}
               tickFormatter={(t: string) => formatTick(t, horizon)}
+              axisLine={{ stroke: "#dfe6ee", strokeWidth: 1 }}
+              tickLine={false}
             />
 
             {/*
@@ -215,8 +312,8 @@ export function DayChartRecharts({ hours, horizon }: Props) {
             */}
             <XAxis xAxisId="bg" dataKey="time" height={0} hide />
             <YAxis yAxisId="bg" domain={[0, 1]} width={0} hide />
-            <YAxis yAxisId="rain" orientation="left" domain={[0, MAX_MM]} tickFormatter={v => `${v}`} tick={{ fontSize: 12 }} width={22} hide={!showRain} tickCount={4} />
-            <YAxis yAxisId="temp" orientation="right" domain={[tempMin, tempMax]} tickFormatter={v => `${v}°`} tick={{ fontSize: 12 }} width={30} hide={!showTemp} />
+            <YAxis yAxisId="rain" orientation="left" domain={[0, MAX_MM]} tickFormatter={v => `${v}`} tick={{ fontSize: 12, fill: "#697586" }} width={22} hide={!showRain} tickCount={4} axisLine={false} tickLine={false} />
+            <YAxis yAxisId="temp" orientation="right" domain={[tempMin, tempMax]} tickFormatter={v => `${v}°`} tick={{ fontSize: 12, fill: "#ff8a3d" }} width={30} hide={!showTemp} axisLine={false} tickLine={false} />
 
             {/* Weather/night background tint — one full-height cell per interval, behind everything */}
             <Bar
@@ -228,7 +325,7 @@ export function DayChartRecharts({ hours, horizon }: Props) {
               tooltipType="none"
             >
               {hours.map((h) => (
-                <Cell key={h.time} fill={cellFill(h)} />
+                <Cell key={h.time} fill={cellFill(h, colors)} />
               ))}
             </Bar>
 
