@@ -1,9 +1,7 @@
 # AGENTS.md
-
 This file captures the project intent and working agreements for future Codex sessions.
 
 ## Project Summary
-
 Rainplay is an iPhone-first vacation/outdoor weather PWA. It should help the user quickly decide:
 
 - go outside now;
@@ -13,7 +11,6 @@ Rainplay is an iPhone-first vacation/outdoor weather PWA. It should help the use
 It is not a full meteorological dashboard. It should feel calm, useful, and Apple-like.
 
 ## User Goal
-
 The user currently combines multiple apps:
 
 - Buienalarm for rain amount;
@@ -28,8 +25,47 @@ The core use case:
 
 Avoid framing the app around a specific activity. Earlier mockups mentioned cycling, but the final direction is broader: `buiten`, `op pad`, or `beste moment`.
 
-## Chosen Platform
+## Source of truth
+Before making changes, read:
+- docs/ai/coding-standards.md
+- docs/ai/testing-conventions.md
+- docs/ai/architecture-principles.md
+- docs/ai/review-rubric.md
+- docs/ai/lessons-learned.md
 
+## Agent workflow
+Use three roles when the task is more than a trivial one-line change:
+1. Software Architect Agent: assess architecture, component boundaries, dependency choices, clean code, maintainability.
+2. Developer Agent: implement the smallest correct change.
+3. Test Engineer Agent: test the behavior, add/adjust tests, look for edge cases and regressions.
+
+## Quality gate
+A change is not done until:
+- relevant tests pass;
+- the Test Engineer gives no blocking issues;
+- the Software Architect gives no blocking issues;
+- any new dependency is justified and accepted;
+- the final response lists changed files, test commands run, known risks, and remaining follow-ups.
+
+## Dependency policy
+Do not add a new production library unless the Software Architect confirms:
+- native platform or existing project utilities are insufficient;
+- the library is maintained;
+- bundle/runtime impact is acceptable;
+- mobile/Safari/PWA behavior is acceptable where relevant;
+- accessibility and testability are not degraded.
+
+## Testing policy
+Prefer behavior-oriented tests over implementation-detail tests.
+Tests should prove user-visible behavior, data transformations, edge cases, and regression risks.
+Avoid snapshot tests unless they protect a stable, intentional public contract.
+
+## Lessons learned policy
+Do not silently rewrite docs/ai/lessons-learned.md.
+When a recurring issue is found, propose a lesson under "Candidate lessons".
+Only move it to "Accepted lessons" after explicit user or reviewer approval.
+
+## Chosen Platform
 Build as a **React + TypeScript web app / PWA**, not native iOS and not React Native for the first version.
 
 Reason:
@@ -40,7 +76,6 @@ Reason:
 - The product is UI/data/decision-logic heavy, not native-feature heavy.
 
 ## Design North Star
-
 Use this screenshot as the main visual reference:
 
 ![North star design](docs/screenshots/north-star-header-graph.png)
@@ -64,11 +99,9 @@ Important design conclusions:
 - The graph is the main decision visualization.
 
 ## UI Copy Direction
-
 Use Dutch copy. Keep it direct and calm.
 
 Examples:
-
 - `Buiten vanaf 14:00`
 - `Wacht tot de middag`
 - `Nu goed naar buiten`
@@ -80,7 +113,6 @@ Examples:
 - `Weather data by Open-Meteo`
 
 ## Chart Requirements
-
 The chart must be one combined graph:
 
 - background blocks show sky/brightness over time;
@@ -106,7 +138,6 @@ The sky/brightness background should be derived from:
 - weather code if useful.
 
 ## Data Source
-
 Use **Open-Meteo** for the first version.
 
 Docs:
@@ -128,7 +159,6 @@ Reason:
 Do not start by parsing raw KNMI GRIB/HDF5/NetCDF data unless the user explicitly asks. Direct KNMI Data Platform data is useful but too heavy for the initial PWA.
 
 ## Suggested API Fields
-
 Use an Open-Meteo request shaped around these variables.
 
 Current:
@@ -174,7 +204,6 @@ Daily:
 - `wind_gusts_10m_max`
 
 ## Outdoor Score
-
 Expose a simple 0-10 score in the UI, but keep the formula invisible.
 
 Initial formula should consider:
@@ -191,7 +220,6 @@ Initial formula should consider:
 The score is a decision aid, not a scientific claim. Tune it for human usefulness.
 
 ## Implementation Preferences
-
 Use:
 
 - React;
@@ -215,7 +243,6 @@ Current architecture:
 - `src/screens/WeatherScreen.tsx` is the main screen composition.
 
 ## Build Order
-
 Recommended first implementation steps:
 
 1. Scaffold React + TypeScript + Vite.
@@ -229,7 +256,6 @@ Recommended first implementation steps:
 9. Test on desktop and iPhone viewport.
 
 ## Non-Goals For The First Version
-
 - Native iOS app.
 - React Native app.
 - CarPlay app.
@@ -240,5 +266,4 @@ Recommended first implementation steps:
 - Multi-page dashboard.
 
 ## Current Repo State
-
 At the time this file was created, the repo only had documentation and screenshot references. The app has not been scaffolded yet.
