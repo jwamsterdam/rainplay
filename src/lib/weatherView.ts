@@ -13,15 +13,20 @@ export function visiblePointsForTodayHorizon(
   horizon: HorizonOption,
 ) {
   if (horizon === "Hele dag") return visibleHoursForHorizon(hoursForDay(hourly, "Vandaag"), horizon);
-
-  const detailedPoints = minutely15.length > 0 ? minutely15 : hourly;
-  const limit = horizon === "+2 uur" ? 8 : 24;
-  const points = detailedPoints.slice(0, limit);
-
   if (minutely15.length === 0) return visibleHoursForHorizon(hoursForDay(hourly, "Vandaag"), horizon);
-  if (horizon === "+6 uur") return points.filter((_, index) => index % 2 === 0);
 
-  return points;
+  const start = niceStartIndex(minutely15);
+
+  if (horizon === "+2 uur") return minutely15.slice(start, start + 8);
+
+  // +6 uur: every 30 min (every other 15-min point)
+  return minutely15.slice(start, start + 24).filter((_, i) => i % 2 === 0);
+}
+
+function niceStartIndex(points: ForecastPoint[]): number {
+  // Prefer last :00/:30 before now (round down); fall back to first :00/:30 in data (round up)
+  const idx = points.findIndex(p => p.time.endsWith(":00") || p.time.endsWith(":30"));
+  return idx === -1 ? 0 : idx;
 }
 
 export function visibleHoursForSelection(

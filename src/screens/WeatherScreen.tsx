@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { DayChart } from "../components/DayChart";
+import { DayChartRecharts } from "../components/DayChartRecharts";
 import { LocationSelector } from "../components/LocationSelector";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
@@ -69,6 +70,8 @@ export function WeatherScreen() {
             <strong>{bestWindow}</strong>
           </span>
         </div>
+
+        <DayChartRecharts hours={visibleHours} horizon={horizon} />
 
         {forecast.isError ? (
           <div className="loading-panel">Weerdata niet beschikbaar</div>

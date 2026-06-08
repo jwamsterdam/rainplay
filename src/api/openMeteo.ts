@@ -13,9 +13,17 @@ export type Forecast = {
   currentTemperature: number;
   hourly: HourlyWeather[];
   minutely15: ForecastPoint[];
+  // date string (YYYY-MM-DD) → time string (HH:MM)
+  sunriseTimes: Record<string, string>;
+  sunsetTimes: Record<string, string>;
 };
 
 type OpenMeteoResponse = {
+  daily: {
+    time: string[];
+    sunrise: string[];
+    sunset: string[];
+  };
   current: {
     temperature_2m: number;
     apparent_temperature: number;
@@ -96,6 +104,7 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
       "shortwave_radiation",
       "is_day",
     ].join(","),
+    daily: "sunrise,sunset",
     forecast_minutely_15: "24",
     forecast_days: "7",
     timezone: "auto",
@@ -109,10 +118,19 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
 
   const data = (await response.json()) as OpenMeteoResponse;
 
+  const sunriseTimes: Record<string, string> = {};
+  const sunsetTimes: Record<string, string> = {};
+  data.daily.time.forEach((date, i) => {
+    sunriseTimes[date] = formatHour(data.daily.sunrise[i]);
+    sunsetTimes[date] = formatHour(data.daily.sunset[i]);
+  });
+
   return {
     currentTemperature: Math.round(data.current.temperature_2m),
     hourly: data.hourly.time.map((time, index) => toHourlyWeather(data, index, time)),
     minutely15: data.minutely_15?.time.map((time, index) => toMinutelyWeather(data, index, time)) ?? [],
+    sunriseTimes,
+    sunsetTimes,
   };
 }
 
