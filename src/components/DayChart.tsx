@@ -1,7 +1,7 @@
 import type { HorizonOption, HourlyWeather } from "../types";
+import type { OutdoorWindow } from "../lib/chart";
 import { skyColor } from "../lib/chart";
 import { weatherViewSettings } from "../config/weatherSettings";
-import { WeatherIcon } from "./WeatherIcons";
 
 type AxisLabel = {
   anchor: "start" | "middle" | "end";
@@ -10,6 +10,7 @@ type AxisLabel = {
 };
 
 type DayChartProps = {
+  bestWindow: OutdoorWindow | null;
   hours: HourlyWeather[];
   horizon: HorizonOption;
 };
@@ -39,7 +40,7 @@ function scoreColor(score: number) {
   return "var(--color-score-bad)";
 }
 
-export function DayChart({ hours, horizon }: DayChartProps) {
+export function DayChart({ bestWindow, hours, horizon }: DayChartProps) {
   if (hours.length === 0) {
     return <div className="loading-panel">Geen uurdata beschikbaar</div>;
   }
@@ -55,7 +56,10 @@ export function DayChart({ hours, horizon }: DayChartProps) {
   const slotWidth = plotWidth / hours.length;
   const xForSlotStart = (index: number) => LEFT + index * slotWidth;
   const xForPoint = (index: number) => xForSlotStart(index) + slotWidth / 2;
-  const axisLabels = timeAxisLabels(hours, horizon, axisStart, axisEnd);
+  const bestWindowWidth = bestWindow
+    ? Math.max(slotWidth, (bestWindow.endIndex - bestWindow.startIndex) * slotWidth)
+    : 0;
+  const axisLabels = timeAxisLabels(hours, horizon, axisStart, axisEnd, slotWidth);
   const temperature = temperatureDomain(hours);
   const temperatureY = (value: number) => {
     const normalized = (value - temperature.min) / (temperature.max - temperature.min);
@@ -160,9 +164,7 @@ export function DayChart({ hours, horizon }: DayChartProps) {
                   {hour.score}
                 </text>
               </g>
-              <foreignObject height="36" width="36" x={x - 18} y="88">
-                <WeatherIcon className="chart-weather-icon" kind={hour.kind} />
-              </foreignObject>
+              <ChartWeatherIcon kind={hour.kind} x={x} y={106} />
               {hour.precipitationMm > 0 && (
                 <rect
                   className="rain-bar"
@@ -176,6 +178,17 @@ export function DayChart({ hours, horizon }: DayChartProps) {
             </g>
           );
         })}
+
+        {bestWindow ? (
+          <rect
+            className="best-window-highlight"
+            height="8"
+            rx="4"
+            width={bestWindowWidth}
+            x={xForSlotStart(bestWindow.startIndex)}
+            y={CHART_HEIGHT - BOTTOM + 10}
+          />
+        ) : null}
 
         {axisLabels.map((label) => (
           <text className="time-label" key={`${label.text}-${label.x}`} textAnchor={label.anchor} x={label.x} y={CHART_HEIGHT - 22}>
@@ -192,20 +205,20 @@ function timeAxisLabels(
   horizon: HorizonOption,
   axisStart: number,
   axisEnd: number,
+  slotWidth: number,
 ): AxisLabel[] {
   if (!hours[0]?.time.includes(":")) {
-    const stepMs = inferStepMs(hours.map((hour) => timestampFor(hour.isoTime)));
-    return hours.map((hour) => ({
+    return hours.map((hour, index) => ({
       anchor: "middle",
       text: hour.time,
-      x: axisPosition(timestampFor(hour.isoTime) + stepMs / 2, axisStart, axisEnd),
+      x: LEFT + index * slotWidth + slotWidth / 2,
     }));
   }
 
-  if (horizon === "+2 uur") return intervalLabels(axisStart, axisEnd, 15 * MINUTE, true, "bounds");
-  if (horizon === "+6 uur") return intervalLabels(axisStart, axisEnd, 60 * MINUTE, true, "bounds");
+  if (horizon === "+2 uur") return intervalLabels(axisStart, axisEnd, 15 * MINUTE, true, "bounds", false);
+  if (horizon === "+6 uur") return intervalLabels(axisStart, axisEnd, 60 * MINUTE, true, "bounds", false);
 
-  return intervalLabels(axisStart, axisEnd, weatherViewSettings.dayChart.hourStep * 60 * MINUTE, false, "bounds");
+  return intervalLabels(axisStart, axisEnd, weatherViewSettings.dayChart.hourStep * 60 * MINUTE, false, "bounds", false);
 }
 
 function intervalLabels(
@@ -214,16 +227,13 @@ function intervalLabels(
   intervalMs: number,
   showMinutes: boolean,
   align: "bounds" | "middle",
+  includeEnd: boolean,
 ): AxisLabel[] {
   const labels: AxisLabel[] = [];
 
-  for (let timestamp = axisStart; timestamp <= axisEnd; timestamp += intervalMs) {
+  for (let timestamp = axisStart; includeEnd ? timestamp <= axisEnd : timestamp < axisEnd; timestamp += intervalMs) {
     const isFirst = timestamp === axisStart;
     const isLast = timestamp === axisEnd;
-
-    if (!showMinutes && isLast && timestamp > axisStart && new Date(timestamp).getHours() === 0) {
-      continue;
-    }
 
     labels.push({
       anchor: align === "bounds" && isFirst ? "start" : align === "bounds" && isLast ? "end" : align === "bounds" ? "start" : "middle",
@@ -285,4 +295,69 @@ function formatAxisTime(timestamp: number, showMinutes: boolean) {
   const minutes = String(date.getMinutes()).padStart(2, "0");
 
   return showMinutes ? `${hours}:${minutes}` : String(date.getHours());
+}
+
+function ChartWeatherIcon({ kind, x, y }: { kind: HourlyWeather["kind"]; x: number; y: number }) {
+  if (kind === "sun") return <ChartSunIcon x={x} y={y} />;
+  if (kind === "partly") return <ChartPartlyIcon x={x} y={y} />;
+  if (kind === "rain") return <ChartRainIcon x={x} y={y} />;
+  return <ChartCloudIcon x={x} y={y} />;
+}
+
+function ChartSunIcon({ x, y }: { x: number; y: number }) {
+  return (
+    <g className="chart-weather-icon" transform={`translate(${x} ${y})`}>
+      <circle cx="0" cy="0" r="12" fill="#ffc93c" />
+      <g stroke="#ffc93c" strokeLinecap="round" strokeWidth="4">
+        <path d="M0 -24v7" />
+        <path d="M0 17v7" />
+        <path d="M-24 0h7" />
+        <path d="M17 0h7" />
+        <path d="m-17 -17 5 5" />
+        <path d="m12 12 5 5" />
+        <path d="m17 -17-5 5" />
+        <path d="m-12 12-5 5" />
+      </g>
+    </g>
+  );
+}
+
+function ChartCloudIcon({ x, y, scale = 0.78 }: { x: number; y: number; scale?: number }) {
+  return (
+    <g className="chart-weather-icon" transform={`translate(${x} ${y}) scale(${scale})`}>
+      <path
+        d="M-20 10c-7 0-12-4.8-12-10.8 0-5.5 4.2-10 9.8-10.8A17.2 17.2 0 0 1-4.5-24c8.9 0 16.2 6.2 17.4 14.4C18.8-8.4 23-3.6 23 2.1 23 8.4 17.7 13 11.2 13H-20Z"
+        fill="#c8d0d8"
+      />
+    </g>
+  );
+}
+
+function ChartRainIcon({ x, y }: { x: number; y: number }) {
+  return (
+    <g className="chart-weather-icon">
+      <ChartCloudIcon scale={0.78} x={x} y={y} />
+      <g transform={`translate(${x} ${y}) scale(0.78)`} stroke="#4f9cf4" strokeLinecap="round" strokeWidth="4">
+        <path d="m-12 18-4 8" />
+        <path d="m0 18-4 8" />
+        <path d="m12 18-4 8" />
+      </g>
+    </g>
+  );
+}
+
+function ChartPartlyIcon({ x, y }: { x: number; y: number }) {
+  return (
+    <g className="chart-weather-icon">
+      <g transform={`translate(${x - 10} ${y - 8}) scale(0.72)`}>
+        <ChartSunIcon x={0} y={0} />
+      </g>
+      <g transform={`translate(${x + 2} ${y + 4}) scale(0.68)`}>
+        <path
+          d="M-20 10c-7 0-12-4.8-12-10.8 0-5.5 4.2-10 9.8-10.8A17.2 17.2 0 0 1-4.5-24c8.9 0 16.2 6.2 17.4 14.4C18.8-8.4 23-3.6 23 2.1 23 8.4 17.7 13 11.2 13H-20Z"
+          fill="#d4d9de"
+        />
+      </g>
+    </g>
+  );
 }

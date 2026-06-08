@@ -4,7 +4,7 @@ import { DayChart } from "../components/DayChart";
 import { LocationSelector } from "../components/LocationSelector";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
-import { bestStartTime, bestWindowLabel } from "../lib/chart";
+import { bestOutdoorWindow, bestStartTime, bestWindowLabel, outdoorSummaryLabel } from "../lib/chart";
 import { headerDateLabel, visibleHoursForSelection, visiblePointsForTodayHorizon } from "../lib/weatherView";
 import { useForecastQuery } from "../queries/weather";
 import {
@@ -40,6 +40,8 @@ export function WeatherScreen() {
 
   const bestTime = useMemo(() => bestStartTime(visibleHours), [visibleHours]);
   const bestWindow = useMemo(() => bestWindowLabel(visibleHours), [visibleHours]);
+  const bestOutdoorSpan = useMemo(() => bestOutdoorWindow(visibleHours), [visibleHours]);
+  const outdoorSummary = useMemo(() => outdoorSummaryLabel(visibleHours, bestOutdoorSpan), [bestOutdoorSpan, visibleHours]);
   const selectedDateLabel = useMemo(() => headerDateLabel(hourly, day), [day, hourly]);
   const temperature = forecast.data?.currentTemperature ?? 18;
 
@@ -56,7 +58,7 @@ export function WeatherScreen() {
           </p>
           <h1>{temperature}&deg;</h1>
           <p className="hero-advice">Buiten vanaf {bestTime}</p>
-          <p className="hero-subtitle">Ochtend nat - middag bijna droog</p>
+          <p className="hero-subtitle">{outdoorSummary}</p>
         </div>
       </section>
 
@@ -73,7 +75,7 @@ export function WeatherScreen() {
         ) : forecast.isLoading ? (
           <div className="loading-panel">Weer laden</div>
         ) : (
-          <DayChart horizon={horizon} hours={visibleHours} />
+          <DayChart bestWindow={bestOutdoorSpan} horizon={horizon} hours={visibleHours} />
         )}
 
         <div className="control-stack">
