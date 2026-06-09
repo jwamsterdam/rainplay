@@ -170,6 +170,7 @@ function makeGradientShape(hours: HourlyWeather[], colors: CellColors) {
     const height = (props.height as number) ?? 0;
     const index = props.index ?? 0;
     if (width <= 0 || height <= 0) return null;
+    if (index < 0 || index >= hours.length || hours.length === 0) return null;
     const stepW = width / N_STEPS;
     const leftColor  = index === 0             ? cellFill(hours[0], colors)       : mixRgba(cellFill(hours[index - 1], colors), cellFill(hours[index], colors));
     const midColor   = cellFill(hours[index], colors);
