@@ -1,10 +1,9 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, Cell, Customized } from "recharts";
+import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./SettingsPanel";
 import type { CellColors } from "./SettingsPanel";
-import { cellFill, buildBlendData } from "../lib/chart";
-import type { BlendPoint } from "../lib/chart";
+import { cellFill, interpolateRgba, mixRgba } from "../lib/chart";
 
 const RAIN_COLOR = "#78b4f8";
 const TEMP_COLOR = "#f97316";
@@ -164,47 +163,44 @@ function ToggleButton({ active, color, label, onClick }: { active: boolean; colo
   );
 }
 
-// --- Blend layer: renders soft colour-mix rects between adjacent bg cells ---
-// Recharts v3 no longer supports per-series `data` on <Bar>, so we draw these
-// directly as SVG <rect> elements. The component is placed as the FIRST child
-// of ComposedChart so it paints below all bars (SVG paint order = z-order).
-//
-// Using Recharts <Customized> so we receive the exact `offset` object that
-// Recharts computes after resolving all axis widths (left rain-axis, right
-// temp-axis, top score/icon axes, bottom label axis). Manual pixel arithmetic
-// is error-prone and breaks whenever an axis is shown/hidden.
+// --- Gradient background layer ---
+// Renders the sky/brightness gradient behind the chart bars.
+// Gradient background: each bar renders N_STEPS thin rects that interpolate
+// leftColor → midColor → rightColor, simulating a smooth per-cell gradient.
+// Uses Bar's `shape` prop so Recharts provides exact x/y/width/height per bar.
+// Each cell's edge colours blend with its neighbours for a continuous gradient.
 
 const CHART_MARGIN_LEFT = 4;
 const CHART_MARGIN_TOP = 14;
 const CHART_MARGIN_BOTTOM = 8;
 
-type CustomizedOffset = { left: number; top: number; width: number; height: number };
-type BlendLayerCustomizedProps = { offset?: CustomizedOffset; blendData: BlendPoint[] };
+const N_STEPS = 8;
 
-function BlendLayerCustomized(props: BlendLayerCustomizedProps) {
-  const { offset, blendData } = props;
-  if (!offset || blendData.length === 0) return null;
-  const { left, top, width, height } = offset;
-  const n = blendData.length + 1; // number of hour cells = blendData.length + 1
-  const cellWidth = width / n;
-  const blendWidth = Math.max(1, cellWidth * 0.5);
-  return (
-    <g>
-      {blendData.map((d, i) => {
-        const cx = left + (i + 1) * cellWidth;
-        return (
-          <rect
-            key={i}
-            x={cx - blendWidth / 2}
-            y={top}
-            width={blendWidth}
-            height={height}
-            fill={d.blendColor}
-          />
-        );
-      })}
-    </g>
-  );
+function makeGradientShape(hours: HourlyWeather[], colors: CellColors) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return function GradientBar(props: any) {
+    const x = (props.x as number) ?? 0;
+    const y = (props.y as number) ?? 0;
+    const width = (props.width as number) ?? 0;
+    const height = (props.height as number) ?? 0;
+    const index = props.index ?? 0;
+    if (width <= 0 || height <= 0) return null;
+    const stepW = width / N_STEPS;
+    const leftColor  = index === 0             ? cellFill(hours[0], colors)       : mixRgba(cellFill(hours[index - 1], colors), cellFill(hours[index], colors));
+    const midColor   = cellFill(hours[index], colors);
+    const rightColor = index === hours.length - 1 ? cellFill(hours[index], colors) : mixRgba(cellFill(hours[index], colors), cellFill(hours[index + 1], colors));
+    return (
+      <g>
+        {Array.from({ length: N_STEPS }, (_, j) => {
+          const t = j / (N_STEPS - 1);
+          const color = t <= 0.5
+            ? interpolateRgba(leftColor, midColor, t * 2)
+            : interpolateRgba(midColor, rightColor, (t - 0.5) * 2);
+          return <rect key={j} x={x + j * stepW} y={y} width={stepW} height={height} fill={color} />;
+        })}
+      </g>
+    );
+  };
 }
 
 // Measure the chart shell ourselves and feed ComposedChart explicit pixel sizes.
@@ -237,7 +233,6 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
   const [tempMin, tempMax] = tempDomain(hours);
   const colors = cellColors ?? defaultCellColors;
 
-  const blendData = buildBlendData(hours, colors);
   const kindMap: KindMap = Object.fromEntries(hours.map(h => [h.time, h.kind]));
   const scoreMap: Record<string, number> = Object.fromEntries(hours.map(h => [h.time, h.score]));
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
@@ -253,10 +248,11 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
       <div ref={shellRef} className="chart-shell" style={{ height: "clamp(224px, 31dvh, 276px)" }}>
         {width > 0 && height > 0 && (
           <ComposedChart width={width} height={height} data={hours} margin={{ top: CHART_MARGIN_TOP, right: 0, bottom: CHART_MARGIN_BOTTOM, left: CHART_MARGIN_LEFT }} barCategoryGap="0%">
-            {/* Blend layer must be FIRST so it paints below all bars (SVG paint order).
-                Recharts passes the resolved `offset` object to <Customized>, which
-                contains the exact plot-area coordinates after all axes are measured. */}
-            <Customized component={(props: object) => <BlendLayerCustomized {...(props as CustomizedOffset)} blendData={blendData} />} />
+            {/* Gradient background — FIRST for correct z-order (SVG paint order).
+                shape prop receives exact x/y/width/height per bar from Recharts. */}
+            <XAxis xAxisId="bg" dataKey="time" height={0} hide padding={{ left: 0, right: 0 }} />
+            <YAxis yAxisId="bg" domain={[0, 1]} width={0} hide />
+            <Bar xAxisId="bg" yAxisId="bg" dataKey={() => 1} isAnimationActive={false} legendType="none" shape={makeGradientShape(hours, colors)} />
 
             <CartesianGrid
               strokeDasharray="4 6"
@@ -304,30 +300,12 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
             />
 
             {/*
-              Background tint bar — sole sky/brightness layer.
-              - Own x-axis ("bg"): keeps this bar out of the "labels" band so it does
-                not compete for width with the rain bar.
-              - Own y-axis (domain 0..1, value 1): spans the full plot height.
-              - padding {{ left:0, right:0 }} on all four XAxes ensures the first tick
+              Rain and temperature axes.
+              - padding {{ left:0, right:0 }} on all XAxes ensures the first tick
                 sits on the y-axis edge, not a half-band to the right.
             */}
-            <XAxis xAxisId="bg" dataKey="time" height={0} hide padding={{ left: 0, right: 0 }} />
-            <YAxis yAxisId="bg" domain={[0, 1]} width={0} hide />
             <YAxis yAxisId="rain" orientation="left" domain={[0, MAX_MM]} tickFormatter={v => `${v}`} tick={{ fontSize: 12, fill: "#697586" }} width={22} hide={!showRain} tickCount={4} axisLine={false} tickLine={false} />
             <YAxis yAxisId="temp" orientation="right" domain={[tempMin, tempMax]} tickFormatter={v => `${v}°`} tick={{ fontSize: 12, fill: "#ff8a3d" }} width={30} hide={!showTemp} axisLine={false} tickLine={false} />
-
-            <Bar
-              xAxisId="bg"
-              yAxisId="bg"
-              dataKey={() => 1}
-              isAnimationActive={false}
-              legendType="none"
-              tooltipType="none"
-            >
-              {hours.map((h) => (
-                <Cell key={h.time} fill={cellFill(h, colors)} />
-              ))}
-            </Bar>
 
             {showRain && (
               <Bar

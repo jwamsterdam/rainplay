@@ -16,5 +16,14 @@ These are proposals. Do not treat them as binding until accepted.
 Reason: checkbox-driven chart visibility is user-visible behavior and easy to regress.
 Status: pending review.
 
+### Candidate - Do not use SVG <defs> inside Recharts <Customized> sub-trees
+SVG `<defs>` nested inside a `<g>` rendered by `<Customized>` is not guaranteed
+to be in scope for `url(#id)` fill references — Safari/WebKit silently ignores
+such gradient definitions, producing a white/empty fill. When a Recharts
+`<Customized>` layer needs a gradient effect, simulate it with N thin
+interpolated-colour `<rect>` elements instead (see `GradientBgLayer` in
+`DayChartRecharts.tsx` and `interpolateRgba` in `src/lib/chart.ts`).
+Status: pending review.
+
 ## Rejected or superseded lessons
 Keep short notes here when an earlier lesson is no longer valid.
