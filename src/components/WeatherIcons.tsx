@@ -1,17 +1,3 @@
-import type { WeatherKind } from "../types";
-
-type IconProps = {
-  kind: WeatherKind;
-  className?: string;
-};
-
-export function WeatherIcon({ kind, className }: IconProps) {
-  if (kind === "sun") return <SunIcon className={className} />;
-  if (kind === "partly") return <PartlyIcon className={className} />;
-  if (kind === "rain") return <RainIcon className={className} />;
-  return <CloudIcon className={className} />;
-}
-
 export function LocationArrow({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">

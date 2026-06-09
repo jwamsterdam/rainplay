@@ -1,4 +1,5 @@
 import type { ForecastPoint, HourlyWeather, WeatherKind } from "../types";
+import { outdoorScore } from "../lib/outdoorScore";
 
 export type ForecastLocation = {
   id?: string;
@@ -139,33 +140,22 @@ function toHourlyWeather(data: OpenMeteoResponse, index: number, isoTime: string
   const precipitationProbability = valueAt(data.hourly.precipitation_probability, index);
   const cloudCover = valueAt(data.hourly.cloud_cover, index);
   const radiation = valueAt(data.hourly.shortwave_radiation, index);
-  const windSpeed = valueAt(data.hourly.wind_speed_10m, index);
-  const windGusts = valueAt(data.hourly.wind_gusts_10m, index);
-  const apparentTemperature = valueAt(data.hourly.apparent_temperature, index);
   const temperatureC = valueAt(data.hourly.temperature_2m, index);
   const weatherCode = valueAt(data.hourly.weather_code, index);
   const isDay = valueAt(data.hourly.is_day, index) === 1;
+  const kind = weatherKind(weatherCode, precipitationMm, cloudCover, radiation, isDay);
 
   return {
     isoTime,
     time: formatHour(isoTime),
     temperatureC,
-    score: outdoorScore({
-      apparentTemperature,
-      cloudCover,
-      isDay,
-      precipitationMm,
-      precipitationProbability,
-      radiation,
-      windGusts,
-      windSpeed,
-    }),
+    score: outdoorScore({ precipitationMm, temperatureC, kind, isDay }),
     precipitationMm,
     precipitationProbability,
     cloudCover,
     radiation,
     isDay,
-    kind: weatherKind(weatherCode, precipitationMm, cloudCover, radiation, isDay),
+    kind,
   };
 }
 
@@ -177,31 +167,20 @@ function toMinutelyWeather(data: OpenMeteoResponse, index: number, isoTime: stri
   const weatherCode = valueAt(data.minutely_15?.weather_code ?? [], index);
   const isDay = valueAt(data.minutely_15?.is_day ?? [], index) === 1;
   const precipitationProbability = valueAt(data.hourly.precipitation_probability, nearestHourlyIndex);
-  const windSpeed = valueAt(data.hourly.wind_speed_10m, nearestHourlyIndex);
-  const windGusts = valueAt(data.hourly.wind_gusts_10m, nearestHourlyIndex);
-  const apparentTemperature = valueAt(data.hourly.apparent_temperature, nearestHourlyIndex);
   const temperatureC = valueAt(data.hourly.temperature_2m, nearestHourlyIndex);
+  const kind = weatherKind(weatherCode, precipitationMm, cloudCover, radiation, isDay);
 
   return {
     isoTime,
     time: formatHour(isoTime),
     temperatureC,
-    score: outdoorScore({
-      apparentTemperature,
-      cloudCover,
-      isDay,
-      precipitationMm,
-      precipitationProbability,
-      radiation,
-      windGusts,
-      windSpeed,
-    }),
+    score: outdoorScore({ precipitationMm, temperatureC, kind, isDay }),
     precipitationMm,
     precipitationProbability,
     cloudCover,
     radiation,
     isDay,
-    kind: weatherKind(weatherCode, precipitationMm, cloudCover, radiation, isDay),
+    kind,
   };
 }
 
@@ -245,31 +224,4 @@ function weatherKind(
   if (cloudCover < 28) return "sun";
   if (cloudCover < 72) return "partly";
   return "cloud";
-}
-
-function outdoorScore(input: {
-  apparentTemperature: number;
-  cloudCover: number;
-  isDay: boolean;
-  precipitationMm: number;
-  precipitationProbability: number;
-  radiation: number;
-  windGusts: number;
-  windSpeed: number;
-}): number {
-  let score = 10;
-
-  score -= Math.min(5, input.precipitationMm * 2.2);
-  score -= Math.min(2.5, input.precipitationProbability / 35);
-  score -= Math.max(0, (input.windSpeed - 18) / 8);
-  score -= Math.max(0, (input.windGusts - 32) / 10);
-
-  if (input.apparentTemperature < 8) score -= (8 - input.apparentTemperature) / 3;
-  if (input.apparentTemperature > 30) score -= (input.apparentTemperature - 30) / 4;
-
-  score += Math.min(1.4, input.radiation / 650);
-  score -= Math.max(0, (input.cloudCover - 70) / 45);
-  if (!input.isDay) score -= 2;
-
-  return Math.max(0, Math.min(10, Math.round(score)));
 }

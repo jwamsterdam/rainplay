@@ -1,0 +1,2 @@
+- [Dual outdoor-score divergence](project_dual_score.md) — two independent score formulas (data layer vs chart) can disagree in the UI
+- [User profile](user_profile.md) — owner of Rainplay, prefers Dutch UI copy, iPhone-first PWA, pragmatic over abstract

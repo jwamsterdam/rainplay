@@ -1,5 +1,4 @@
 import { useRef } from "react";
-import type { WeatherKind } from "../types";
 
 export type CellColors = {
   sun: string;
@@ -204,9 +203,4 @@ export function SettingsPanel({ colors, onColorsChange, onClose }: Props) {
       </div>
     </div>
   );
-}
-
-// Re-export WeatherKind usage helper
-export function kindToColorKey(isDay: boolean, kind: WeatherKind): ColorKey {
-  return isDay ? kind : "night";
 }

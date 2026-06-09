@@ -6,6 +6,9 @@ These are binding project rules.
 ### 2026-06-08 - Keep chart state outside visual components
 When adding chart interactions, keep visibility/filter state in a parent hook or store. Chart primitives should receive derived props and not own cross-widget state.
 
+### 2026-06-09 - Derived domain logic belongs in lib/api, not in presentation components
+Score formulas, best-window calculations, and other decision logic must live in `src/lib/` or `src/api/`, never recomputed inside chart or UI components. A component that re-derives a score creates a silent second source of truth that can diverge from the one driving hero copy and advice text. When a component needs a derived value, pass it as a prop or read it from the normalised data layer.
+
 ## Candidate lessons
 These are proposals. Do not treat them as binding until accepted.
 

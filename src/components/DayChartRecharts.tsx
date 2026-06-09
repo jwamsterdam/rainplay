@@ -108,52 +108,6 @@ function WeatherIconTick(props: { x?: number | string; y?: number | string; payl
   );
 }
 
-// --- Cycling score algorithm ---
-
-// IJkpunten:
-//   lichte regen            → ~5  (lichte onvoldoende)
-//   bewolkt + aangenaam     → 7-8
-//   bewolkt + koud          → ~6
-//   zon met bewolking       → 8-9
-//   echt zonnig             → 9-10
-
-function precipitationPenalty(mm: number): number {
-  if (mm <= 0)    return 0;
-  if (mm <= 0.2)  return 2.5;  // motregen  → ~5-6 afhankelijk van icoon
-  if (mm <= 0.5)  return 3.5;  // drizzle   → ~4-5
-  if (mm <= 1)    return 6;    // licht nat → ~2-3
-  if (mm <= 2)    return 8;    // matig     → ~1
-  return 10;                   // zwaar     → 0
-}
-
-function temperaturePenalty(c: number): number {
-  if (c >= 14 && c <= 22) return 0;   // ideaal
-  if (c >= 12)             return 1;   // fris maar prima
-  if (c >= 8)              return 2;   // koud voor wielrenner
-  if (c >= 4)              return 3;   // erg koud
-  if (c > 22 && c <= 26)   return 0.5;
-  if (c > 26 && c <= 30)   return 1.5;
-  return 4;                            // <4°C of >30°C
-}
-
-function kindPenalty(kind: WeatherKind): number {
-  if (kind === "sun")    return 0;   // ideaal
-  if (kind === "partly") return 1;   // zon met bewolking → 8-9
-  if (kind === "cloud")  return 2;   // bewolkt           → 7-8
-  return 2;                          // rain icon: extra aftrek → regen altijd ≤5
-}
-
-function cyclingScore(hour: HourlyWeather): number {
-  const raw =
-    10 -
-    precipitationPenalty(hour.precipitationMm) -
-    temperaturePenalty(hour.temperatureC) -
-    kindPenalty(hour.kind);
-  const score = Math.max(0, Math.min(10, Math.round(raw)));
-  // Nacht: altijd maximaal 6 — het blijft donker, hoe droog of warm ook
-  return hour.isDay ? score : Math.min(score, 6);
-}
-
 function scoreColor(score: number): string {
   if (score >= 8) return "#93bf00";
   if (score >= 6) return "#f58a1f";
@@ -255,7 +209,7 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
   const colors = cellColors ?? defaultCellColors;
 
   const kindMap: KindMap = Object.fromEntries(hours.map(h => [h.time, h.kind]));
-  const scoreMap: Record<string, number> = Object.fromEntries(hours.map(h => [h.time, cyclingScore(h)]));
+  const scoreMap: Record<string, number> = Object.fromEntries(hours.map(h => [h.time, h.score]));
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
 
   return (
