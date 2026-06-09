@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { ToggleButton } from "./ToggleButton";
 
 export type CellColors = {
   sun: string;
@@ -123,10 +124,16 @@ function hexToRgba(hex: string, alpha: number): string {
 type Props = {
   colors: CellColors;
   onColorsChange: (colors: CellColors) => void;
+  showTemp: boolean;
+  showRain: boolean;
+  showIcons: boolean;
+  onShowTempChange: (v: boolean) => void;
+  onShowRainChange: (v: boolean) => void;
+  onShowIconsChange: (v: boolean) => void;
   onClose: () => void;
 };
 
-export function SettingsPanel({ colors, onColorsChange, onClose }: Props) {
+export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, showIcons, onShowTempChange, onShowRainChange, onShowIconsChange, onClose }: Props) {
   const inputRefs = useRef<Record<ColorKey, HTMLInputElement | null>>({
     sun: null, partly: null, cloud: null, rain: null, night: null,
   });
@@ -151,6 +158,15 @@ export function SettingsPanel({ colors, onColorsChange, onClose }: Props) {
         <div className="settings-header">
           <h2 className="settings-title">Grafiekkleuren</h2>
           <button className="settings-close" onClick={onClose} aria-label="Sluiten">×</button>
+        </div>
+
+        <div className="settings-section">
+          <h3 className="settings-section-title">Grafiek lagen</h3>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <ToggleButton active={showTemp} color="#f97316" label="Temperatuur" onClick={() => onShowTempChange(!showTemp)} />
+            <ToggleButton active={showRain} color="#78b4f8" label="Neerslag" onClick={() => onShowRainChange(!showRain)} />
+            <ToggleButton active={showIcons} color="#64748b" label="Iconen" onClick={() => onShowIconsChange(!showIcons)} />
+          </div>
         </div>
 
         <p className="settings-hint">Tik op het kleurvlak om de kleur te kiezen. Sleep de schuifregelaar voor de intensiteit.</p>

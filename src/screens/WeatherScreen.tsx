@@ -31,6 +31,9 @@ export function WeatherScreen() {
   const [day, setDay] = useAtom(selectedDayAtom);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cellColors, setCellColors] = useState<CellColors>(defaultCellColors);
+  const [showTemp, setShowTemp] = useState(true);
+  const [showRain, setShowRain] = useState(true);
+  const [showIcons, setShowIcons] = useState(true);
   const [horizon, setHorizon] = useAtom(selectedHorizonAtom);
   const location = useAtomValue(selectedLocationAtom);
   const locationError = useAtomValue(locationErrorAtom);
@@ -95,7 +98,7 @@ export function WeatherScreen() {
         ) : forecast.isLoading ? (
           <div className="loading-panel">Weer laden</div>
         ) : (
-          <DayChartRecharts hours={visibleHours} horizon={horizon} cellColors={cellColors} />
+          <DayChartRecharts hours={visibleHours} horizon={horizon} cellColors={cellColors} showTemp={showTemp} showRain={showRain} showIcons={showIcons} />
         )}
 
         <div className="control-stack">
@@ -123,6 +126,12 @@ export function WeatherScreen() {
         <SettingsPanel
           colors={cellColors}
           onColorsChange={setCellColors}
+          showTemp={showTemp}
+          showRain={showRain}
+          showIcons={showIcons}
+          onShowTempChange={setShowTemp}
+          onShowRainChange={setShowRain}
+          onShowIconsChange={setShowIcons}
           onClose={() => setSettingsOpen(false)}
         />
       )}

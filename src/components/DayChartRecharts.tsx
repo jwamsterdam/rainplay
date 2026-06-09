@@ -4,6 +4,7 @@ import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./SettingsPanel";
 import type { CellColors } from "./SettingsPanel";
 import { cellFill, interpolateRgba, mixRgba } from "../lib/chart";
+import { ToggleButton } from "./ToggleButton";
 
 const RAIN_COLOR = "#78b4f8";
 const TEMP_COLOR = "#f97316";
@@ -15,6 +16,9 @@ type Props = {
   hours: HourlyWeather[];
   horizon: HorizonOption;
   cellColors?: CellColors;
+  showTemp: boolean;
+  showRain: boolean;
+  showIcons: boolean;
 };
 
 // --- Icon path components (no <svg> wrapper, for use inside Recharts SVG) ---
@@ -144,25 +148,6 @@ function tempDomain(hours: HourlyWeather[]): [number, number] {
   return min === max ? [min - 2, max + 2] : [min, max];
 }
 
-function ToggleButton({ active, color, label, onClick }: { active: boolean; color: string; label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        fontSize: 12,
-        padding: "2px 10px",
-        borderRadius: 12,
-        border: `1px solid ${active ? color : "#ccc"}`,
-        background: active ? color : "#fff",
-        color: active ? "#fff" : "#666",
-        cursor: "pointer",
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
 // --- Gradient background layer ---
 // Renders the sky/brightness gradient behind the chart bars.
 // Gradient background: each bar renders N_STEPS thin rects that interpolate
@@ -226,10 +211,7 @@ function useElementSize<T extends HTMLElement>() {
 
 // --- Main component ---
 
-export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
-  const [showTemp, setShowTemp] = useState(true);
-  const [showRain, setShowRain] = useState(true);
-  const [showIcons, setShowIcons] = useState(true);
+export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRain, showIcons }: Props) {
   const [tempMin, tempMax] = tempDomain(hours);
   const colors = cellColors ?? defaultCellColors;
 
@@ -239,12 +221,6 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
 
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 0, paddingLeft: 4 }}>
-        <ToggleButton active={showTemp} color={TEMP_COLOR} label="Temperatuur" onClick={() => setShowTemp(v => !v)} />
-        <ToggleButton active={showRain} color={RAIN_COLOR} label="Neerslag" onClick={() => setShowRain(v => !v)} />
-        <ToggleButton active={showIcons} color="#64748b" label="Iconen" onClick={() => setShowIcons(v => !v)} />
-      </div>
-
       <div ref={shellRef} className="chart-shell" style={{ height: "clamp(224px, 31dvh, 276px)" }}>
         {width > 0 && height > 0 && (
           <ComposedChart width={width} height={height} data={hours} margin={{ top: CHART_MARGIN_TOP, right: 0, bottom: CHART_MARGIN_BOTTOM, left: CHART_MARGIN_LEFT }} barCategoryGap="0%">
