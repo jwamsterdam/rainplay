@@ -21,6 +21,17 @@ function cellFill(hour: HourlyWeather, colors: CellColors): string {
   return colors[hour.kind as WeatherKind];
 }
 
+// The tint is drawn by two overlapping full-height layers (CartesianGrid verticalFill
+// + a background Bar) so the columns line up crisply. Two layers would otherwise show
+// the colour at ~double strength, so each layer renders at half the configured alpha.
+function halfAlpha(rgba: string): string {
+  return rgba.replace(/,\s*([\d.]+)\)\s*$/, (_, a) => `, ${parseFloat(a) / 2})`);
+}
+
+function cellFillHalf(hour: HourlyWeather, colors: CellColors): string {
+  return halfAlpha(cellFill(hour, colors));
+}
+
 // --- Icon path components (no <svg> wrapper, for use inside Recharts SVG) ---
 
 function SunPaths() {
@@ -248,8 +259,8 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 6, paddingLeft: 4 }}>
+    <div style={{ marginTop: 12 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 0, paddingLeft: 4 }}>
         <ToggleButton active={showTemp} color={TEMP_COLOR} label="Temperatuur" onClick={() => setShowTemp(v => !v)} />
         <ToggleButton active={showRain} color={RAIN_COLOR} label="Neerslag" onClick={() => setShowRain(v => !v)} />
         <ToggleButton active={showIcons} color="#64748b" label="Iconen" onClick={() => setShowIcons(v => !v)} />
@@ -257,12 +268,12 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
 
       <div ref={shellRef} className="chart-shell" style={{ height: "clamp(224px, 31dvh, 276px)" }}>
         {width > 0 && height > 0 && (
-          <ComposedChart width={width} height={height} data={hours} margin={{ top: showIcons ? SCORE_SIZE + ICON_SIZE + 10 : SCORE_SIZE + 6, right: 0, bottom: 8, left: 4 }} barCategoryGap="0%">
+          <ComposedChart width={width} height={height} data={hours} margin={{ top: 14, right: 0, bottom: 8, left: 4 }} barCategoryGap="0%">
             <CartesianGrid
               strokeDasharray="4 6"
               stroke="#dce3ea"
               strokeWidth={1}
-              vertical={false}
+              verticalFill={hours.map(h => cellFillHalf(h, colors))}
             />
 
             {/* Score badges — always visible */}
@@ -302,20 +313,19 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
             />
 
             {/*
-              Dedicated x/y axes for the full-height weather/night tint.
+              Second tint layer that overlaps the CartesianGrid verticalFill, so the
+              columns read as crisp full-height blocks. Both layers run at half alpha
+              (see cellFillHalf) so the combined result matches the configured colour.
               - Own x-axis: Recharts groups bars by their shared x-axis band, so without
-                a separate x-axis the tint bar splits the slot with the rain bar instead
-                of filling the whole column. Same dataKey/data keeps it pixel-aligned.
-              - Own y-axis (domain 0..1, value 1): makes the bar span the full plot height.
-              - width/height 0: a hidden axis still consumes an axis position step equal to
-                its size, which would otherwise shove the rain axis off-screen.
+                a separate x-axis the tint bar splits the slot with the rain bar.
+              - Own y-axis (domain 0..1, value 1): spans the full plot height.
+              - width/height 0: a hidden axis still consumes a position step otherwise.
             */}
             <XAxis xAxisId="bg" dataKey="time" height={0} hide />
             <YAxis yAxisId="bg" domain={[0, 1]} width={0} hide />
             <YAxis yAxisId="rain" orientation="left" domain={[0, MAX_MM]} tickFormatter={v => `${v}`} tick={{ fontSize: 12, fill: "#697586" }} width={22} hide={!showRain} tickCount={4} axisLine={false} tickLine={false} />
             <YAxis yAxisId="temp" orientation="right" domain={[tempMin, tempMax]} tickFormatter={v => `${v}°`} tick={{ fontSize: 12, fill: "#ff8a3d" }} width={30} hide={!showTemp} axisLine={false} tickLine={false} />
 
-            {/* Weather/night background tint — one full-height cell per interval, behind everything */}
             <Bar
               xAxisId="bg"
               yAxisId="bg"
@@ -325,7 +335,7 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
               tooltipType="none"
             >
               {hours.map((h) => (
-                <Cell key={h.time} fill={cellFill(h, colors)} />
+                <Cell key={h.time} fill={cellFillHalf(h, colors)} />
               ))}
             </Bar>
 

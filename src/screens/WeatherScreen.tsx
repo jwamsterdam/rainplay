@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
-import { DayChart } from "../components/DayChart";
 import { DayChartRecharts } from "../components/DayChartRecharts";
 import { LocationSelector } from "../components/LocationSelector";
 import { SegmentedControl } from "../components/SegmentedControl";
@@ -91,14 +90,12 @@ export function WeatherScreen() {
           </span>
         </div>
 
-        <DayChartRecharts hours={visibleHours} horizon={horizon} cellColors={cellColors} />
-
         {forecast.isError ? (
           <div className="loading-panel">Weerdata niet beschikbaar</div>
         ) : forecast.isLoading ? (
           <div className="loading-panel">Weer laden</div>
         ) : (
-          <DayChart bestWindow={bestOutdoorSpan} horizon={horizon} hours={visibleHours} />
+          <DayChartRecharts hours={visibleHours} horizon={horizon} cellColors={cellColors} />
         )}
 
         <div className="control-stack">
