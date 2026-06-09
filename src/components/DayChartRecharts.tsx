@@ -1,8 +1,10 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, Cell } from "recharts";
+import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, Cell, Customized } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./SettingsPanel";
 import type { CellColors } from "./SettingsPanel";
+import { cellFill, buildBlendData } from "../lib/chart";
+import type { BlendPoint } from "../lib/chart";
 
 const RAIN_COLOR = "#78b4f8";
 const TEMP_COLOR = "#f97316";
@@ -15,22 +17,6 @@ type Props = {
   horizon: HorizonOption;
   cellColors?: CellColors;
 };
-
-function cellFill(hour: HourlyWeather, colors: CellColors): string {
-  if (!hour.isDay) return colors.night;
-  return colors[hour.kind as WeatherKind];
-}
-
-// The tint is drawn by two overlapping full-height layers (CartesianGrid verticalFill
-// + a background Bar) so the columns line up crisply. Two layers would otherwise show
-// the colour at ~double strength, so each layer renders at half the configured alpha.
-function halfAlpha(rgba: string): string {
-  return rgba.replace(/,\s*([\d.]+)\)\s*$/, (_, a) => `, ${parseFloat(a) / 2})`);
-}
-
-function cellFillHalf(hour: HourlyWeather, colors: CellColors): string {
-  return halfAlpha(cellFill(hour, colors));
-}
 
 // --- Icon path components (no <svg> wrapper, for use inside Recharts SVG) ---
 
@@ -178,6 +164,49 @@ function ToggleButton({ active, color, label, onClick }: { active: boolean; colo
   );
 }
 
+// --- Blend layer: renders soft colour-mix rects between adjacent bg cells ---
+// Recharts v3 no longer supports per-series `data` on <Bar>, so we draw these
+// directly as SVG <rect> elements. The component is placed as the FIRST child
+// of ComposedChart so it paints below all bars (SVG paint order = z-order).
+//
+// Using Recharts <Customized> so we receive the exact `offset` object that
+// Recharts computes after resolving all axis widths (left rain-axis, right
+// temp-axis, top score/icon axes, bottom label axis). Manual pixel arithmetic
+// is error-prone and breaks whenever an axis is shown/hidden.
+
+const CHART_MARGIN_LEFT = 4;
+const CHART_MARGIN_TOP = 14;
+const CHART_MARGIN_BOTTOM = 8;
+
+type CustomizedOffset = { left: number; top: number; width: number; height: number };
+type BlendLayerCustomizedProps = { offset?: CustomizedOffset; blendData: BlendPoint[] };
+
+function BlendLayerCustomized(props: BlendLayerCustomizedProps) {
+  const { offset, blendData } = props;
+  if (!offset || blendData.length === 0) return null;
+  const { left, top, width, height } = offset;
+  const n = blendData.length + 1; // number of hour cells = blendData.length + 1
+  const cellWidth = width / n;
+  const blendWidth = Math.max(1, cellWidth * 0.5);
+  return (
+    <g>
+      {blendData.map((d, i) => {
+        const cx = left + (i + 1) * cellWidth;
+        return (
+          <rect
+            key={i}
+            x={cx - blendWidth / 2}
+            y={top}
+            width={blendWidth}
+            height={height}
+            fill={d.blendColor}
+          />
+        );
+      })}
+    </g>
+  );
+}
+
 // Measure the chart shell ourselves and feed ComposedChart explicit pixel sizes.
 // Avoids ResponsiveContainer's mount-time measurement race (the "width(-1)" warning
 // and occasional collapsed-width render under StrictMode's double render).
@@ -208,6 +237,7 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
   const [tempMin, tempMax] = tempDomain(hours);
   const colors = cellColors ?? defaultCellColors;
 
+  const blendData = buildBlendData(hours, colors);
   const kindMap: KindMap = Object.fromEntries(hours.map(h => [h.time, h.kind]));
   const scoreMap: Record<string, number> = Object.fromEntries(hours.map(h => [h.time, h.score]));
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
@@ -222,12 +252,16 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
 
       <div ref={shellRef} className="chart-shell" style={{ height: "clamp(224px, 31dvh, 276px)" }}>
         {width > 0 && height > 0 && (
-          <ComposedChart width={width} height={height} data={hours} margin={{ top: 14, right: 0, bottom: 8, left: 4 }} barCategoryGap="0%">
+          <ComposedChart width={width} height={height} data={hours} margin={{ top: CHART_MARGIN_TOP, right: 0, bottom: CHART_MARGIN_BOTTOM, left: CHART_MARGIN_LEFT }} barCategoryGap="0%">
+            {/* Blend layer must be FIRST so it paints below all bars (SVG paint order).
+                Recharts passes the resolved `offset` object to <Customized>, which
+                contains the exact plot-area coordinates after all axes are measured. */}
+            <Customized component={(props: object) => <BlendLayerCustomized {...(props as CustomizedOffset)} blendData={blendData} />} />
+
             <CartesianGrid
               strokeDasharray="4 6"
               stroke="#dce3ea"
               strokeWidth={1}
-              verticalFill={hours.map(h => cellFillHalf(h, colors))}
             />
 
             {/* Score badges — always visible */}
@@ -240,6 +274,7 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
               axisLine={false}
               tickLine={false}
               interval={0}
+              padding={{ left: 0, right: 0 }}
             />
 
             {/* Icon row above the chart */}
@@ -253,6 +288,7 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
                 axisLine={false}
                 tickLine={false}
                 interval={0}
+                padding={{ left: 0, right: 0 }}
               />
             )}
 
@@ -264,18 +300,18 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
               tickFormatter={(t: string) => formatTick(t, horizon)}
               axisLine={{ stroke: "#dfe6ee", strokeWidth: 1 }}
               tickLine={false}
+              padding={{ left: 0, right: 0 }}
             />
 
             {/*
-              Second tint layer that overlaps the CartesianGrid verticalFill, so the
-              columns read as crisp full-height blocks. Both layers run at half alpha
-              (see cellFillHalf) so the combined result matches the configured colour.
-              - Own x-axis: Recharts groups bars by their shared x-axis band, so without
-                a separate x-axis the tint bar splits the slot with the rain bar.
+              Background tint bar — sole sky/brightness layer.
+              - Own x-axis ("bg"): keeps this bar out of the "labels" band so it does
+                not compete for width with the rain bar.
               - Own y-axis (domain 0..1, value 1): spans the full plot height.
-              - width/height 0: a hidden axis still consumes a position step otherwise.
+              - padding {{ left:0, right:0 }} on all four XAxes ensures the first tick
+                sits on the y-axis edge, not a half-band to the right.
             */}
-            <XAxis xAxisId="bg" dataKey="time" height={0} hide />
+            <XAxis xAxisId="bg" dataKey="time" height={0} hide padding={{ left: 0, right: 0 }} />
             <YAxis yAxisId="bg" domain={[0, 1]} width={0} hide />
             <YAxis yAxisId="rain" orientation="left" domain={[0, MAX_MM]} tickFormatter={v => `${v}`} tick={{ fontSize: 12, fill: "#697586" }} width={22} hide={!showRain} tickCount={4} axisLine={false} tickLine={false} />
             <YAxis yAxisId="temp" orientation="right" domain={[tempMin, tempMax]} tickFormatter={v => `${v}°`} tick={{ fontSize: 12, fill: "#ff8a3d" }} width={30} hide={!showTemp} axisLine={false} tickLine={false} />
@@ -289,7 +325,7 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
               tooltipType="none"
             >
               {hours.map((h) => (
-                <Cell key={h.time} fill={cellFillHalf(h, colors)} />
+                <Cell key={h.time} fill={cellFill(h, colors)} />
               ))}
             </Bar>
 
@@ -303,7 +339,7 @@ export function DayChartRecharts({ hours, horizon, cellColors }: Props) {
                 strokeWidth={2.5}
                 radius={[6, 6, 0, 0]}
                 isAnimationActive={false}
-                barSize={18}
+                maxBarSize={18}
               />
             )}
             {showTemp && (

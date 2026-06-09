@@ -1,4 +1,5 @@
-import type { HourlyWeather } from "../types";
+import type { HourlyWeather, WeatherKind } from "../types";
+import type { CellColors } from "../components/SettingsPanel";
 
 export type OutdoorWindow = {
   endTime: string;
@@ -178,4 +179,45 @@ function dayPeriodLabel(time: string) {
 
 function capitalize(value: string) {
   return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
+}
+
+// --- Color helpers for gradient-overlap blend effect ---
+
+export function cellFill(hour: HourlyWeather, colors: CellColors): string {
+  if (!hour.isDay) return colors.night;
+  return colors[hour.kind as WeatherKind];
+}
+
+export function parseRgba(s: string): { r: number; g: number; b: number; a: number } {
+  const match = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
+  if (!match) return { r: 0, g: 0, b: 0, a: 1 };
+  return {
+    r: parseInt(match[1], 10),
+    g: parseInt(match[2], 10),
+    b: parseInt(match[3], 10),
+    a: match[4] !== undefined ? parseFloat(match[4]) : 1,
+  };
+}
+
+export function mixRgba(c1: string, c2: string): string {
+  const a = parseRgba(c1);
+  const b = parseRgba(c2);
+  const r = Math.round((a.r + b.r) / 2);
+  const g = Math.round((a.g + b.g) / 2);
+  const bl = Math.round((a.b + b.b) / 2);
+  const alpha = Math.round(((a.a + b.a) / 2) * 100) / 100;
+  return `rgba(${r}, ${g}, ${bl}, ${alpha})`;
+}
+
+export type BlendPoint = { blendIndex: number; blendColor: string };
+
+export function buildBlendData(hours: HourlyWeather[], colors: CellColors): BlendPoint[] {
+  const result: BlendPoint[] = [];
+  for (let i = 0; i <= hours.length - 2; i++) {
+    result.push({
+      blendIndex: i + 0.5,
+      blendColor: mixRgba(cellFill(hours[i], colors), cellFill(hours[i + 1], colors)),
+    });
+  }
+  return result;
 }
