@@ -56,9 +56,7 @@ button {
 .weather-hero {
   position: relative;
   flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: clamp(220px, 38dvh, 360px);
+  min-height: clamp(240px, 46dvh, 460px);
   padding: max(12px, env(safe-area-inset-top)) var(--space-5) clamp(18px, 3dvh, 44px);
   overflow: hidden;
 }
@@ -271,7 +269,7 @@ button {
 }
 
 .hero-copy {
-  margin-top: auto;
+  margin-top: clamp(8px, 2dvh, 28px);
   text-align: center;
 }
 
@@ -322,11 +320,8 @@ button {
   z-index: 2;
   flex-shrink: 0;
   width: min(100%, 500px);
-  /* centred card; the full-frame sky shows through on the sides */
   margin: -20px auto 0;
-  /* safe-area padding keeps content above the home indicator; the sheet's own
-     background fills the inset, so no page colour shows at the bottom in PWA */
-  padding: 22px 10px max(24px, env(safe-area-inset-bottom));
+  padding: 14px 10px max(20px, env(safe-area-inset-bottom));
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   background: var(--color-surface);
   box-shadow: var(--shadow-sheet);
@@ -747,8 +742,7 @@ button {
   }
 
   .weather-hero {
-    /* flex:1 fills the frame above the sheet; no fixed height needed */
-    min-height: 360px;
+    min-height: 420px;
   }
 
   .decision-sheet {

@@ -221,8 +221,8 @@ export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRai
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
 
   return (
-    <div style={{ marginTop: 12 }}>
-      <div ref={shellRef} className="chart-shell" style={{ height: "clamp(224px, 31dvh, 276px)" }}>
+    <div style={{ marginTop: 10 }}>
+      <div ref={shellRef} className="chart-shell" style={{ height: 200 }}>
         {width > 0 && height > 0 && (
           <ComposedChart width={width} height={height} data={hours} margin={{ top: CHART_MARGIN_TOP, right: 0, bottom: CHART_MARGIN_BOTTOM, left: CHART_MARGIN_LEFT }} barCategoryGap="0%">
             {/* Gradient background — FIRST for correct z-order (SVG paint order).
