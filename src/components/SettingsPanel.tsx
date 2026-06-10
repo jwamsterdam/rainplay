@@ -216,6 +216,8 @@ export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, show
         </ul>
 
         <button className="settings-done" onClick={onClose}>Klaar</button>
+
+        <p className="settings-version">{__APP_VERSION__}</p>
       </div>
     </div>
   );

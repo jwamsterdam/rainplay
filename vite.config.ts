@@ -1,6 +1,15 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { execSync } from "child_process";
+import { readFileSync } from "fs";
+
+// Build versie: major.minor uit package.json, patch = git commit count.
+// Groeit automatisch mee zonder handmatig bumpen.
+const pkg = JSON.parse(readFileSync("./package.json", "utf-8")) as { version: string };
+const [major, minor] = pkg.version.split(".");
+const commitCount = execSync("git rev-list --count HEAD").toString().trim();
+const APP_VERSION = `v${major}.${minor}.${commitCount}`;
 
 export default defineConfig({
   plugins: [
@@ -52,6 +61,10 @@ export default defineConfig({
       },
     }),
   ],
+  define: {
+    // Beschikbaar in de app als __APP_VERSION__ (wordt inlined door Vite).
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   resolve: {
     dedupe: ["react", "react-dom"],
   },

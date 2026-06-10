@@ -715,6 +715,14 @@ button {
   cursor: pointer;
 }
 
+.settings-version {
+  margin: 12px 0 0;
+  color: var(--color-ink-soft);
+  font-size: 12px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  text-align: center;
+}
+
 /* --- */
 
 .attribution {
