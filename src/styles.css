@@ -404,7 +404,14 @@ button {
   box-shadow: var(--shadow-control);
   pointer-events: none;
   will-change: transform;
+  z-index: 0; /* below the segment buttons */
   /* No CSS transition — movement is driven by the RAF loop */
+}
+
+/* Knoppen staan altijd boven de indicator-pill */
+.segment {
+  position: relative;
+  z-index: 1;
 }
 
 /* Suppress the duplicate white background when the sliding indicator is active */
