@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, ReferenceLine } from "recharts";
+import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
@@ -162,49 +162,44 @@ function VerticalTimeTick(props: { x?: number | string; y?: number | string; pay
   );
 }
 
-// Custom label for the "nu" reference line: plain red "nu" text at the top of
-// the line. A subtle text shadow keeps it readable over dark night backgrounds
-// without an enclosing shape.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function NowLabel(props: any) {
-  const vb = props.viewBox ?? {};
-  const lineX = Number(vb.x ?? 0);
-  const top = Number(vb.y ?? 0);
-  return (
-    <text
-      x={lineX - 4}
-      y={top + 9}
-      textAnchor="end"
-      dominantBaseline="central"
-      fill="rgba(255, 59, 48, 0.95)"
-      fontSize={10}
-      fontWeight={700}
-      pointerEvents="none"
-      style={{ paintOrder: "stroke" }}
-      stroke="rgba(255, 255, 255, 0.7)"
-      strokeWidth={2.5}
-    >
-      nu
-    </text>
-  );
+
+function minutesOf(time: string): number {
+  const [hh = "0", mm = "00"] = time.split(":");
+  return parseInt(hh, 10) * 60 + parseInt(mm, 10);
 }
 
-// Find the closest time label in the data to the current wall-clock time
-function nearestNowLabel(hours: HourlyWeather[]): string | null {
-  if (hours.length === 0) return null;
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  let best: string | null = null;
-  let bestDiff = Infinity;
-  for (const h of hours) {
-    const [hh = "0", mm = "00"] = h.time.split(":");
-    const diff = Math.abs(parseInt(hh, 10) * 60 + parseInt(mm, 10) - nowMin);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      best = h.time;
-    }
-  }
-  return best;
+// Exact horizontal pixel position of the current wall-clock time within the
+// plot rect — interpolated BETWEEN the hourly band centres so the line sits at
+// the real time, not snapped to a grid line. Returns null when now is outside
+// the visible range (e.g. tomorrow's chart, or a +2h window already passed).
+function nowLineX(hours: HourlyWeather[], rect: PlotRect): number | null {
+  if (hours.length < 2) return null;
+  const nowMin = minutesOf(`${new Date().getHours()}:${new Date().getMinutes()}`);
+  const mins = hours.map((h) => minutesOf(h.time));
+  if (nowMin < mins[0] || nowMin > mins[mins.length - 1]) return null;
+
+  // Index i such that mins[i] <= now <= mins[i+1]; t is the fraction between.
+  let i = 0;
+  while (i < mins.length - 1 && mins[i + 1] <= nowMin) i++;
+  const span = mins[i + 1] - mins[i] || 1;
+  const t = (nowMin - mins[i]) / span;
+
+  // Each hour occupies one band; its centre is at (index + 0.5) * bandWidth.
+  const bandWidth = rect.width / hours.length;
+  return rect.x + (i + t + 0.5) * bandWidth;
+}
+
+// Dashed "now" marker drawn as an absolutely-positioned overlay (the categorical
+// x-axis can only place a ReferenceLine on a whole hour, so we position by pixel).
+function NowLine({ hours, rect, isToday }: { hours: HourlyWeather[]; rect: PlotRect | null; isToday?: boolean }) {
+  if (!isToday || !rect) return null;
+  const x = nowLineX(hours, rect);
+  if (x == null) return null;
+  return (
+    <div className="chart-now-line" style={{ left: x, top: rect.y, height: rect.height }}>
+      <span className="chart-now-label">nu</span>
+    </div>
+  );
 }
 
 function tempDomain(hours: HourlyWeather[]): [number, number] {
@@ -371,18 +366,13 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
   // from Recharts' per-bar layout so the canvas can align to it.
   const plotRectProbe = useMemo(() => makePlotRectProbe(setPlotRect), []);
 
-  const nowLabel = useMemo(
-    () => (isToday ? nearestNowLabel(hours) : null),
-    // Recalculate when hours change; intentionally NOT on a timer — good enough for a weather app.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isToday, hours],
-  );
-
   return (
     <div style={{ marginTop: 10 }}>
       <div ref={shellRef} className="chart-shell" style={{ height: 280 }}>
         {/* Sky gradient painted once on canvas, BEHIND the Recharts SVG. */}
         <SkyGradientCanvas hours={hours} colors={colors} rect={plotRect} />
+        {/* Dashed "now" marker, positioned at the exact current time. */}
+        <NowLine hours={hours} rect={plotRect} isToday={isToday} />
         {width > 0 && height > 0 && (
           <ComposedChart width={width} height={height} data={hours} margin={{ top: CHART_MARGIN_TOP, right: 0, bottom: CHART_MARGIN_BOTTOM, left: CHART_MARGIN_LEFT }} barCategoryGap="0%" style={{ position: "relative", zIndex: 1 }}>
             {/* Invisible probe Bar — measures the plot-area rectangle so the
@@ -436,21 +426,6 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
               tickLine={false}
               padding={{ left: 0, right: 0 }}
             />
-
-            {/* "Nu"-lijn op vandaag */}
-            {nowLabel && (
-              <ReferenceLine
-                xAxisId="labels"
-                yAxisId="rain"
-                x={nowLabel}
-                // Solid (not dashed): when the line lands on a dashed grid line,
-                // interleaving dashes look cluttered. A clean solid stroke reads
-                // clearly as the "now" marker over the dashed grid.
-                stroke="#ff3b30"
-                strokeWidth={2}
-                label={<NowLabel />}
-              />
-            )}
 
             {/*
               Rain and temperature axes.

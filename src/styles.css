@@ -522,6 +522,28 @@ button {
   -webkit-touch-callout: none;
 }
 
+/* Dashed vertical "now" marker, positioned by pixel at the exact current time. */
+.chart-now-line {
+  position: absolute;
+  width: 0;
+  border-left: 1.5px dashed #ff3b30;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.chart-now-label {
+  position: absolute;
+  top: -1px;
+  right: 3px;
+  color: #ff3b30;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  /* subtle white halo so it stays legible over the dark night gradient */
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff;
+}
+
 .loading-panel {
   display: grid;
   min-height: clamp(200px, 27dvh, 238px);
