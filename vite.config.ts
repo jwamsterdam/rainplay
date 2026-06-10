@@ -61,6 +61,11 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    // Gebruik de poort die de (preview-)harness toewijst via PORT; val terug op
+    // Vite's standaard 5173 bij een handmatige run. Voorkomt poortconflicten.
+    port: Number(process.env.PORT) || 5173,
+  },
   define: {
     // Beschikbaar in de app als __APP_VERSION__ (wordt inlined door Vite).
     __APP_VERSION__: JSON.stringify(APP_VERSION),
