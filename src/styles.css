@@ -56,6 +56,8 @@ button {
 .weather-hero {
   position: relative;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   min-height: clamp(220px, 38dvh, 360px);
   padding: max(12px, env(safe-area-inset-top)) var(--space-5) clamp(18px, 3dvh, 44px);
   overflow: hidden;
@@ -269,7 +271,7 @@ button {
 }
 
 .hero-copy {
-  margin-top: clamp(8px, 2dvh, 28px);
+  margin-top: auto;
   text-align: center;
 }
 
