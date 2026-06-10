@@ -443,9 +443,11 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
                 xAxisId="labels"
                 yAxisId="rain"
                 x={nowLabel}
-                stroke="rgba(255, 59, 48, 0.75)"
-                strokeWidth={1.5}
-                strokeDasharray="4 3"
+                // Solid (not dashed): when the line lands on a dashed grid line,
+                // interleaving dashes look cluttered. A clean solid stroke reads
+                // clearly as the "now" marker over the dashed grid.
+                stroke="#ff3b30"
+                strokeWidth={2}
                 label={<NowLabel />}
               />
             )}
@@ -479,7 +481,7 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
                 stroke={TEMP_COLOR}
                 strokeWidth={2}
                 dot={{ r: 3, fill: TEMP_COLOR, strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
+                activeDot={false}
                 isAnimationActive={false}
               />
             )}

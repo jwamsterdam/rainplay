@@ -515,6 +515,11 @@ button {
   overflow: hidden;
   border-radius: 14px;
   background: transparent;
+  /* No text/element selection or long-press callout on the chart (esp. the temp
+     line and its dots) when tapping or dragging on touch devices. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .loading-panel {
