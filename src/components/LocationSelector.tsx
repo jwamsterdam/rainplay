@@ -179,7 +179,10 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
                       aria-selected={false}
                       type="button"
                     >
-                      {suggestion.name}
+                      <span className="location-suggestion-name">{suggestion.name}</span>
+                      {suggestion.country ? (
+                        <span className="location-suggestion-country">{suggestion.country}</span>
+                      ) : null}
                     </button>
                   </li>
                 ))}

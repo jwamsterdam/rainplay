@@ -42,21 +42,16 @@ export async function searchLocations(query: string, signal?: AbortSignal): Prom
 
   return data.results.map((result) => ({
     id: `geo-${result.id}`,
-    name: displayName(result),
+    // Place name only — the header shows this verbatim. Country is kept
+    // separately so the search dropdown can show "Place, Country" without
+    // province/state noise.
+    name: result.name,
+    country: result.country,
     latitude: roundCoordinate(result.latitude),
     longitude: roundCoordinate(result.longitude),
     source: "manual" as const,
     updatedAt: Date.now(),
   }));
-}
-
-// "Haarlem, Noord-Holland, Nederland" — but kept compact: name + country,
-// with the region only when it disambiguates same-named places.
-export function displayName(result: GeocodingResult): string {
-  const parts = [result.name];
-  if (result.admin1 && result.admin1 !== result.name) parts.push(result.admin1);
-  if (result.country) parts.push(result.country);
-  return parts.join(", ");
 }
 
 function roundCoordinate(value: number): number {

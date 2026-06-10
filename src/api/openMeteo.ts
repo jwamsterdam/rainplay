@@ -4,6 +4,9 @@ import { outdoorScore } from "../lib/outdoorScore";
 export type ForecastLocation = {
   id?: string;
   name: string;
+  // Country name, used only to disambiguate in the search dropdown — never shown
+  // in the header (which shows the place name alone).
+  country?: string;
   latitude: number;
   longitude: number;
   source: "default" | "gps" | "manual";

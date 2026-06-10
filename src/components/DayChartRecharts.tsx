@@ -162,24 +162,30 @@ function VerticalTimeTick(props: { x?: number | string; y?: number | string; pay
   );
 }
 
-// Custom label for the "nu" reference line: a small, subtle white oval behind
-// the red "nu" text so it stays legible over dark (night) gradient backgrounds.
+// Custom label for the "nu" reference line: plain red "nu" text at the top of
+// the line. A subtle text shadow keeps it readable over dark night backgrounds
+// without an enclosing shape.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function NowLabel(props: any) {
   const vb = props.viewBox ?? {};
   const lineX = Number(vb.x ?? 0);
   const top = Number(vb.y ?? 0);
-  // Sit just inside the line at the top of the plot; nudge left so the oval
-  // never clips past the right chart edge.
-  const cx = lineX - 11;
-  const cy = top + 9;
   return (
-    <g pointerEvents="none">
-      <ellipse cx={cx} cy={cy} rx={12} ry={8.5} fill="rgba(255, 255, 255, 0.9)" />
-      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="rgba(255, 59, 48, 0.95)" fontSize={10} fontWeight={700}>
-        nu
-      </text>
-    </g>
+    <text
+      x={lineX - 4}
+      y={top + 9}
+      textAnchor="end"
+      dominantBaseline="central"
+      fill="rgba(255, 59, 48, 0.95)"
+      fontSize={10}
+      fontWeight={700}
+      pointerEvents="none"
+      style={{ paintOrder: "stroke" }}
+      stroke="rgba(255, 255, 255, 0.7)"
+      strokeWidth={2.5}
+    >
+      nu
+    </text>
   );
 }
 
