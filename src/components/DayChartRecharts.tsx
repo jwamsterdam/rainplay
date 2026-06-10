@@ -1,9 +1,9 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, ReferenceLine } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./SettingsPanel";
 import type { CellColors } from "./SettingsPanel";
-import { cellFill, interpolateRgba, mixRgba } from "../lib/chart";
+import { buildSkyGradientStops } from "../lib/chart";
 import { ToggleButton } from "./ToggleButton";
 
 const RAIN_COLOR = "#78b4f8";
@@ -189,52 +189,102 @@ function tempDomain(hours: HourlyWeather[]): [number, number] {
 
 // --- Gradient background layer ---
 // Renders the sky/brightness gradient behind the chart bars.
-// Gradient background: each bar renders N_STEPS thin rects that interpolate
-// leftColor → midColor → rightColor, simulating a smooth per-cell gradient.
-// Uses Bar's `shape` prop so Recharts provides exact x/y/width/height per bar.
-// Each cell's edge colours blend with its neighbours for a continuous gradient.
+// The whole gradient is painted ONCE on an offscreen-backed <canvas> using a
+// single createLinearGradient, so there are no alpha-compounding seams between
+// cells (the old approach stacked many semi-transparent rects, which painted
+// visible dark stripes at every band boundary).
 
 const CHART_MARGIN_LEFT = 4;
 const CHART_MARGIN_TOP = 14;
 const CHART_MARGIN_BOTTOM = 8;
 
-// More steps → smoother gradient transitions (especially night→day).
-// 20 steps gives ~1.5 px per step on a typical 30 px bar — imperceptible staircase.
-const N_STEPS = 20;
-// Extend each bar 0.5 px on each side so sub-pixel antialiasing gaps between
-// adjacent cells are covered by overlapping paint (not visible white seams).
-const OVERHANG = 0.5;
+type PlotRect = { x: number; y: number; width: number; height: number };
 
-function makeGradientShape(hours: HourlyWeather[], colors: CellColors) {
+// Invisible probe Bar: its `shape` callback is called once per data point with
+// the exact x/y/width/height Recharts laid out. We union those into the full
+// plot-area rectangle and hand it to the canvas, so the gradient lines up
+// pixel-accurately with the rain bands and the "nu" ReferenceLine.
+function makePlotRectProbe(onMeasure: (rect: PlotRect) => void) {
+  let minX = Infinity;
+  let maxRight = -Infinity;
+  let top = 0;
+  let bottom = 0;
+  let pending: PlotRect | null = null;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return function GradientBar(props: any) {
+  return function ProbeBar(props: any) {
     const x = (props.x as number) ?? 0;
     const y = (props.y as number) ?? 0;
     const width = (props.width as number) ?? 0;
     const height = (props.height as number) ?? 0;
-    const index = props.index ?? 0;
-    if (width <= 0 || height <= 0) return null;
-    if (index < 0 || index >= hours.length || hours.length === 0) return null;
-    const stepW = width / N_STEPS;
-    const leftColor  = index === 0             ? cellFill(hours[0], colors)       : mixRgba(cellFill(hours[index - 1], colors), cellFill(hours[index], colors));
-    const midColor   = cellFill(hours[index], colors);
-    const rightColor = index === hours.length - 1 ? cellFill(hours[index], colors) : mixRgba(cellFill(hours[index], colors), cellFill(hours[index + 1], colors));
-    return (
-      <g>
-        {Array.from({ length: N_STEPS }, (_, j) => {
-          const t = j / (N_STEPS - 1);
-          const color = t <= 0.5
-            ? interpolateRgba(leftColor, midColor, t * 2)
-            : interpolateRgba(midColor, rightColor, (t - 0.5) * 2);
-          // First sub-rect: extend left by OVERHANG to cover gap with previous cell.
-          // Last sub-rect: extend right by OVERHANG to cover gap with next cell.
-          const rx = x + j * stepW - (j === 0 ? OVERHANG : 0);
-          const rw = stepW + (j === 0 || j === N_STEPS - 1 ? OVERHANG : 0);
-          return <rect key={j} x={rx} y={y} width={rw} height={height} fill={color} />;
-        })}
-      </g>
-    );
+    const index = (props.index as number) ?? 0;
+    // First bar of a fresh layout pass — reset accumulators so a shrink in
+    // plot width is reflected (not just growth).
+    if (index === 0) {
+      minX = Infinity;
+      maxRight = -Infinity;
+    }
+    if (width > 0 && height > 0) {
+      minX = Math.min(minX, x);
+      maxRight = Math.max(maxRight, x + width);
+      top = y;
+      bottom = y + height;
+      const next: PlotRect = { x: minX, y: top, width: maxRight - minX, height: bottom - top };
+      if (
+        !pending ||
+        pending.x !== next.x ||
+        pending.y !== next.y ||
+        pending.width !== next.width ||
+        pending.height !== next.height
+      ) {
+        pending = next;
+        onMeasure(next);
+      }
+    }
+    // Probe only — paint nothing.
+    return <g />;
   };
+}
+
+// Canvas that paints the sky gradient for the measured plot rect.
+function SkyGradientCanvas({ hours, colors, rect }: { hours: HourlyWeather[]; colors: CellColors; rect: PlotRect | null }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !rect || rect.width <= 0 || rect.height <= 0) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const cssWidth = rect.width;
+    const cssHeight = rect.height;
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+    canvas.style.width = `${cssWidth}px`;
+    canvas.style.height = `${cssHeight}px`;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+    const stops = buildSkyGradientStops(hours, colors);
+    if (stops.length === 0) return;
+
+    const gradient = ctx.createLinearGradient(0, 0, cssWidth, 0);
+    for (const stop of stops) gradient.addColorStop(stop.offset, stop.color);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, cssWidth, cssHeight);
+  }, [hours, colors, rect]);
+
+  if (!rect) return null;
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      style={{ position: "absolute", left: rect.x, top: rect.y, pointerEvents: "none" }}
+    />
+  );
 }
 
 // Measure the chart shell ourselves and feed ComposedChart explicit pixel sizes.
@@ -267,6 +317,11 @@ export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRai
   const kindMap: KindMap = Object.fromEntries(hours.map(h => [h.time, h.kind]));
   const scoreMap: Record<string, number> = Object.fromEntries(hours.map(h => [h.time, h.score]));
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
+  const [plotRect, setPlotRect] = useState<PlotRect | null>(null);
+
+  // Stable probe per render of the bg Bar — collects the plot-area rectangle
+  // from Recharts' per-bar layout so the canvas can align to it.
+  const plotRectProbe = useMemo(() => makePlotRectProbe(setPlotRect), []);
 
   const nowLabel = useMemo(
     () => (isToday ? nearestNowLabel(hours) : null),
@@ -278,13 +333,15 @@ export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRai
   return (
     <div style={{ marginTop: 10 }}>
       <div ref={shellRef} className="chart-shell" style={{ height: 280 }}>
+        {/* Sky gradient painted once on canvas, BEHIND the Recharts SVG. */}
+        <SkyGradientCanvas hours={hours} colors={colors} rect={plotRect} />
         {width > 0 && height > 0 && (
-          <ComposedChart width={width} height={height} data={hours} margin={{ top: CHART_MARGIN_TOP, right: 0, bottom: CHART_MARGIN_BOTTOM, left: CHART_MARGIN_LEFT }} barCategoryGap="0%">
-            {/* Gradient background — FIRST for correct z-order (SVG paint order).
-                shape prop receives exact x/y/width/height per bar from Recharts. */}
+          <ComposedChart width={width} height={height} data={hours} margin={{ top: CHART_MARGIN_TOP, right: 0, bottom: CHART_MARGIN_BOTTOM, left: CHART_MARGIN_LEFT }} barCategoryGap="0%" style={{ position: "relative", zIndex: 1 }}>
+            {/* Invisible probe Bar — measures the plot-area rectangle so the
+                canvas gradient aligns to the rain bands and the "nu" line. */}
             <XAxis xAxisId="bg" dataKey="time" height={0} hide padding={{ left: 0, right: 0 }} />
             <YAxis yAxisId="bg" domain={[0, 1]} width={0} hide />
-            <Bar xAxisId="bg" yAxisId="bg" dataKey={() => 1} isAnimationActive={false} legendType="none" shape={makeGradientShape(hours, colors)} />
+            <Bar xAxisId="bg" yAxisId="bg" dataKey={() => 1} isAnimationActive={false} legendType="none" shape={plotRectProbe} />
 
             <CartesianGrid
               strokeDasharray="4 6"

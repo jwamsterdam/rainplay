@@ -212,8 +212,8 @@ export function mixRgba(c1: string, c2: string): string {
 /**
  * Linearly interpolate between two rgba() colour strings.
  * t=0 returns c1, t=1 returns c2.
- * Used by GradientBgLayer to simulate SVG linearGradient without <defs>,
- * which is unreliable inside Recharts' <Customized> SVG sub-tree.
+ * Kept as a public colour helper; the sky gradient now interpolates via the
+ * canvas (addColorStop), but this remains available for callers/tests.
  */
 export function interpolateRgba(c1: string, c2: string, t: number): string {
   const a = parseRgba(c1);
@@ -236,4 +236,55 @@ export function buildBlendData(hours: HourlyWeather[], colors: CellColors): Blen
     });
   }
   return result;
+}
+
+export type GradientStop = { offset: number; color: string };
+
+/**
+ * Build the colour stops for the sky/brightness gradient as a single horizontal
+ * linear gradient (offsets 0..1), to be painted in one pass on a <canvas>.
+ *
+ * Visual model (mirrors the previous per-cell rect gradient, but seam-free):
+ * - Each hour i occupies the band [i/n, (i+1)/n]; its CENTER (offset (i+0.5)/n)
+ *   gets that hour's colour = cellFill(hours[i]).
+ * - At the BOUNDARY between hour i and i+1 (offset (i+1)/n) the colour is the
+ *   50/50 blend of the two neighbouring cell colours — same as the old edge mix.
+ * - The very first edge (offset 0) = first hour's colour; the very last edge
+ *   (offset 1) = last hour's colour.
+ *
+ * Optimisation: consecutive stops sharing an identical colour are collapsed to
+ * the minimal set (the first and last of each identical-colour run), so a flat
+ * run of equal cells (e.g. night hours) renders as a flat fill rather than many
+ * redundant interpolation points.
+ */
+export function buildSkyGradientStops(hours: HourlyWeather[], colors: CellColors): GradientStop[] {
+  const n = hours.length;
+  if (n === 0) return [];
+
+  const fills = hours.map((hour) => cellFill(hour, colors));
+
+  // Full center+boundary stop list, left-to-right.
+  const raw: GradientStop[] = [];
+  raw.push({ offset: 0, color: fills[0] }); // first edge
+  for (let i = 0; i < n; i++) {
+    raw.push({ offset: (i + 0.5) / n, color: fills[i] }); // band center
+    if (i < n - 1) {
+      raw.push({ offset: (i + 1) / n, color: mixRgba(fills[i], fills[i + 1]) }); // boundary blend
+    }
+  }
+  raw.push({ offset: 1, color: fills[n - 1] }); // last edge
+
+  // Collapse runs of identical colour: keep only the first and last of each run.
+  const collapsed: GradientStop[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const isFirst = i === 0;
+    const isLast = i === raw.length - 1;
+    const samePrev = !isFirst && raw[i - 1].color === raw[i].color;
+    const sameNext = !isLast && raw[i + 1].color === raw[i].color;
+    // Drop a stop only if it sits in the interior of an identical-colour run.
+    if (samePrev && sameNext) continue;
+    collapsed.push(raw[i]);
+  }
+
+  return collapsed;
 }

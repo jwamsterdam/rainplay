@@ -457,6 +457,7 @@ button {
 }
 
 .chart-shell {
+  position: relative;
   overflow: hidden;
   border-radius: 14px;
   background: transparent;
