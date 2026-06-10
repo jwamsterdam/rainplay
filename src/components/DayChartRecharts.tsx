@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef, useState } from "react";
-import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid } from "recharts";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, ReferenceLine } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./SettingsPanel";
 import type { CellColors } from "./SettingsPanel";
@@ -19,6 +19,7 @@ type Props = {
   showTemp: boolean;
   showRain: boolean;
   showIcons: boolean;
+  isToday?: boolean;
 };
 
 // --- Icon path components (no <svg> wrapper, for use inside Recharts SVG) ---
@@ -135,10 +136,47 @@ function ScoreTick(props: { x?: number | string; y?: number | string; payload?: 
 
 // --- Helpers ---
 
-function formatTick(t: string, horizon: HorizonOption): string {
-  if (horizon === "+2 uur" || horizon === "+6 uur") return t;
-  const h = parseInt(t, 10);
-  return isNaN(h) ? t : String(h);
+// "08:00" → "8:00", "12:00" → "12:00"
+function formatTick(t: string): string {
+  const [hh = "0", mm = "00"] = t.split(":");
+  return `${parseInt(hh, 10)}:${mm}`;
+}
+
+// Custom vertical tick for the x-axis
+function VerticalTimeTick(props: { x?: number | string; y?: number | string; payload?: { value: string } }) {
+  const x = Number(props.x ?? 0);
+  const y = Number(props.y ?? 0);
+  const label = formatTick(props.payload?.value ?? "");
+  return (
+    <g transform={`translate(${x},${y + 4})`}>
+      <text
+        transform="rotate(-90)"
+        textAnchor="end"
+        fill="#697586"
+        fontSize={11}
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
+// Find the closest time label in the data to the current wall-clock time
+function nearestNowLabel(hours: HourlyWeather[]): string | null {
+  if (hours.length === 0) return null;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  let best: string | null = null;
+  let bestDiff = Infinity;
+  for (const h of hours) {
+    const [hh = "0", mm = "00"] = h.time.split(":");
+    const diff = Math.abs(parseInt(hh, 10) * 60 + parseInt(mm, 10) - nowMin);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = h.time;
+    }
+  }
+  return best;
 }
 
 function tempDomain(hours: HourlyWeather[]): [number, number] {
@@ -212,13 +250,20 @@ function useElementSize<T extends HTMLElement>() {
 
 // --- Main component ---
 
-export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRain, showIcons }: Props) {
+export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRain, showIcons, isToday }: Props) {
   const [tempMin, tempMax] = tempDomain(hours);
   const colors = cellColors ?? defaultCellColors;
 
   const kindMap: KindMap = Object.fromEntries(hours.map(h => [h.time, h.kind]));
   const scoreMap: Record<string, number> = Object.fromEntries(hours.map(h => [h.time, h.score]));
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
+
+  const nowLabel = useMemo(
+    () => (isToday ? nearestNowLabel(hours) : null),
+    // Recalculate when hours change; intentionally NOT on a timer — good enough for a weather app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isToday, hours],
+  );
 
   return (
     <div style={{ marginTop: 10 }}>
@@ -265,16 +310,29 @@ export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRai
               />
             )}
 
-            {/* Time labels below */}
+            {/* Time labels below — rotated vertical, "8:00" format */}
             <XAxis
               xAxisId="labels"
               dataKey="time"
-              tick={{ fontSize: 12, fill: "#697586" }}
-              tickFormatter={(t: string) => formatTick(t, horizon)}
+              tick={<VerticalTimeTick />}
+              height={36}
               axisLine={{ stroke: "#dfe6ee", strokeWidth: 1 }}
               tickLine={false}
               padding={{ left: 0, right: 0 }}
             />
+
+            {/* "Nu"-lijn op vandaag */}
+            {nowLabel && (
+              <ReferenceLine
+                xAxisId="labels"
+                yAxisId="rain"
+                x={nowLabel}
+                stroke="rgba(255, 59, 48, 0.75)"
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+                label={{ value: "nu", position: "insideTopRight", fill: "rgba(255, 59, 48, 0.85)", fontSize: 10, fontWeight: 600 }}
+              />
+            )}
 
             {/*
               Rain and temperature axes.

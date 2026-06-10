@@ -193,7 +193,14 @@ export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, show
                   type="color"
                   value={hex}
                   onChange={(e) => handleColorChange(key, e.target.value)}
-                  style={{ display: "none" }}
+                  style={{
+                    position: "absolute",
+                    width: 0,
+                    height: 0,
+                    opacity: 0,
+                    overflow: "hidden",
+                    pointerEvents: "none",
+                  }}
                   aria-hidden="true"
                 />
                 <div className="settings-alpha-row">

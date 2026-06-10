@@ -175,6 +175,7 @@ export function DayCarousel({
               showTemp={showTemp}
               showRain={showRain}
               showIcons={showIcons}
+              isToday={i === 0}
             />
           )}
         </div>
