@@ -332,6 +332,7 @@ button {
 }
 
 .segmented {
+  position: relative; /* required for the absolute-positioned sliding indicator */
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 3px;
@@ -389,6 +390,27 @@ button {
   background: rgba(255, 255, 255, 0.98);
   color: var(--color-ink);
   box-shadow: var(--shadow-control);
+}
+
+/* Sliding indicator for the day-selector */
+.segment-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 4); /* 4 options: Vandaag / Morgen / Overmorgen / Week */
+  border-radius: var(--radius-control-inner);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: var(--shadow-control);
+  pointer-events: none;
+  will-change: transform;
+  /* No CSS transition — movement is driven by the RAF loop */
+}
+
+/* Suppress the duplicate white background when the sliding indicator is active */
+.segmented--with-indicator .segment.active {
+  background: transparent;
+  box-shadow: none;
 }
 
 .chart-heading {
@@ -732,6 +754,7 @@ button {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  overscroll-behavior: none;
   scrollbar-width: none;
 }
 .chart-carousel::-webkit-scrollbar {

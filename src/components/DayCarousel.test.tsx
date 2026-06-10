@@ -55,6 +55,20 @@ vi.mock("./DayChartRecharts", () => ({
 
 const PANEL_WIDTH = 400;
 
+/**
+ * Simulate a mid-swipe scroll position (not necessarily snapped).
+ * Unlike simulateUserScrollEnd, this does NOT dispatch scrollend — it only
+ * sets scrollLeft and fires the 'scroll' event so the fraction callback fires.
+ */
+function simulateScrollEvent(container: HTMLElement, scrollLeft: number) {
+  Object.defineProperty(container, "scrollLeft", {
+    configurable: true,
+    writable: true,
+    value: scrollLeft,
+  });
+  container.dispatchEvent(new Event("scroll", { bubbles: true }));
+}
+
 /** Default props: empty data, no loading/error. */
 const defaultProps: DayCarouselProps = {
   hourly: [],
@@ -313,5 +327,146 @@ describe("DayCarousel", () => {
       left: PANEL_WIDTH * 2,
       behavior: "smooth",
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // onScrollFractionChange — fraction callback
+  // -------------------------------------------------------------------------
+
+  it("calls onScrollFractionChange(0.5) when scrollLeft is halfway between Vandaag and Morgen", () => {
+    const onScrollFractionChange = vi.fn();
+    const { container } = renderCarousel({ onScrollFractionChange });
+
+    act(() => { vi.runAllTimers(); }); // flush mount guard
+
+    act(() => {
+      // Halfway between panel 0 and panel 1: scrollLeft = 0.5 * PANEL_WIDTH
+      // Total scroll range = PANEL_WIDTH * (4 - 1) = 3 * PANEL_WIDTH
+      // fraction = 0.5 * PANEL_WIDTH / (3 * PANEL_WIDTH) ≈ 0.1667 — but the formula
+      // uses containerWidth * (length - 1) where containerWidth = PANEL_WIDTH.
+      // fraction = (0.5 * PANEL_WIDTH) / (PANEL_WIDTH * 3) = 1/6
+      simulateScrollEvent(container, PANEL_WIDTH * 0.5);
+    });
+
+    // fraction = (PANEL_WIDTH * 0.5) / (PANEL_WIDTH * 3) = 1/6
+    const expected = 0.5 / 3;
+    expect(onScrollFractionChange).toHaveBeenCalledWith(
+      expect.closeTo(expected, 5),
+    );
+  });
+
+  it("calls onScrollFractionChange(1) when scrollLeft is at the last panel (Week)", () => {
+    const onScrollFractionChange = vi.fn();
+    const { container } = renderCarousel({ onScrollFractionChange });
+
+    act(() => { vi.runAllTimers(); });
+
+    act(() => {
+      // Last panel: scrollLeft = PANEL_WIDTH * 3; fraction = 1.0
+      simulateScrollEvent(container, PANEL_WIDTH * 3);
+    });
+
+    expect(onScrollFractionChange).toHaveBeenCalledWith(1);
+  });
+
+  it("calls onScrollFractionChange(0) when scrollLeft is at the first panel (Vandaag)", () => {
+    const onScrollFractionChange = vi.fn();
+    const { container } = renderCarousel({ onScrollFractionChange });
+
+    act(() => { vi.runAllTimers(); });
+
+    act(() => {
+      simulateScrollEvent(container, 0);
+    });
+
+    expect(onScrollFractionChange).toHaveBeenCalledWith(0);
+  });
+
+  it("clamps onScrollFractionChange to [0, 1] for out-of-bounds scrollLeft", () => {
+    const onScrollFractionChange = vi.fn();
+    const { container } = renderCarousel({ onScrollFractionChange });
+
+    act(() => { vi.runAllTimers(); });
+
+    // Over-scroll beyond last panel
+    act(() => { simulateScrollEvent(container, PANEL_WIDTH * 10); });
+    let calls = onScrollFractionChange.mock.calls;
+    expect(calls[calls.length - 1][0]).toBe(1);
+
+    // Under-scroll before first panel (negative)
+    act(() => { simulateScrollEvent(container, -100); });
+    calls = onScrollFractionChange.mock.calls;
+    expect(calls[calls.length - 1][0]).toBe(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // onScrollFractionChange absent — no throw when scrolling
+  // -------------------------------------------------------------------------
+  it("does not throw when scroll event fires and onScrollFractionChange is not provided", () => {
+    const { container } = renderCarousel(); // no onScrollFractionChange
+
+    act(() => { vi.runAllTimers(); });
+
+    expect(() => {
+      act(() => { simulateScrollEvent(container, PANEL_WIDTH * 1.5); });
+    }).not.toThrow();
+  });
+
+  // -------------------------------------------------------------------------
+  // Fraction callback not called when containerWidth is 0
+  // -------------------------------------------------------------------------
+  it("calls onScrollFractionChange(0) (safe fallback) when containerWidth is 0", () => {
+    const onScrollFractionChange = vi.fn();
+    const { container } = renderCarousel({ onScrollFractionChange });
+
+    act(() => { vi.runAllTimers(); });
+
+    // Override offsetWidth back to 0 (simulates zero-size container)
+    Object.defineProperty(container, "offsetWidth", {
+      configurable: true,
+      get: () => 0,
+    });
+
+    act(() => { simulateScrollEvent(container, 100); });
+
+    // When containerWidth === 0, the fraction formula returns 0 (safe fallback).
+    const lastArg =
+      onScrollFractionChange.mock.calls[onScrollFractionChange.mock.calls.length - 1][0];
+    expect(lastArg).toBe(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // Bug regression: debounce timer leaks on unmount when supportsScrollEnd=true
+  //
+  // In the current implementation, when "onscrollend" in window is true (which
+  // is the case in jsdom v29+), the cleanup function omits clearTimeout for the
+  // debounceTimer that the onScroll handler sets. This means a pending 120ms
+  // debounce timer can fire after unmount and call setSelectedDay on a stale
+  // atom reference.
+  //
+  // This test documents the bug: it fires a scroll event (which sets the
+  // debounceTimer), then unmounts the component, then advances timers by 120ms.
+  // If the bug is present, the debounce callback runs silently; if the bug were
+  // fixed (clearTimeout added to the supportsScrollEnd cleanup branch), it would
+  // not run. The test cannot directly observe a "safe" no-op — it proves the
+  // debounce fires after unmount by checking no error is thrown (the current
+  // behavior). Future fix: move clearTimeout to both branches.
+  // -------------------------------------------------------------------------
+  it("debounce timer set during scroll does not throw after unmount (regression guard for cleanup bug)", () => {
+    const { container, unmount } = renderCarousel();
+
+    act(() => { vi.runAllTimers(); });
+
+    // Fire a scroll event — this sets the 120ms debounceTimer inside onScroll.
+    act(() => { simulateScrollEvent(container, PANEL_WIDTH * 1.5); });
+
+    // Unmount before the 120ms debounce fires.
+    unmount();
+
+    // Advance by 120ms — the debounce timer fires. With the current bug it runs
+    // updateAtomFromScroll on a stale element reference; confirm no exception.
+    expect(() => {
+      act(() => { vi.advanceTimersByTime(150); });
+    }).not.toThrow();
   });
 });

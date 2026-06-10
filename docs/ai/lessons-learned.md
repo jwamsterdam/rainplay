@@ -19,6 +19,10 @@ These are proposals. Do not treat them as binding until accepted.
 3. Mount-time `setTimeout(0)`-guards flushen met `act(() => { vi.runAllTimers(); })` vóór gesimuleerde user-swipes, anders staat `isScrollingProgrammatically` nog op `true` en no-opt de handler.
 Status: pending review.
 
+### Candidate - Perpetual RAF loops vereisen een manual spy-patroon in Vitest
+Wanneer een React-component een zichzelf-herplanende `requestAnimationFrame`-loop draait (bewaakt door een `running` ref), treedt met `vi.useFakeTimers()` + `vi.runAllTimers()` de Vitest infinite-loop guard op (10 000 timers). Het juiste patroon: mock `window.requestAnimationFrame` handmatig zodat callbacks in een queue terechtkomen, en flush exact één generatie per keer met een `flushRaf()`-helper die de queue splicet en elke callback eenmaal aanroept. `vi.runAllTicks()` werkt niet omdat RAF-callbacks macro-tasks zijn, geen microtasks. Zie `src/components/SegmentedControl.test.tsx` (RAF indicator transform describe-blok) voor de referentie-implementatie.
+Status: pending review.
+
 ### Candidate - CSS scroll-snap: scroll-snap-stop: always verplicht op iOS
 Zonder `scroll-snap-stop: always` op de carousel-panelen kan iOS bij een snelle swipe meerdere panelen overslaan. `scroll-snap-stop: always` beperkt elke swipe tot maximaal één panel. Dit is niet zichtbaar in de desktop browser-simulator — testen op een echte iPhone is verplicht voor scroll-snap carousels.
 Status: pending review.

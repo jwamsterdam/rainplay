@@ -16,6 +16,7 @@ export type DayCarouselProps = {
   showIcons: boolean;
   isLoading: boolean;
   isError: boolean;
+  onScrollFractionChange?: (fraction: number) => void;
 };
 
 export function DayCarousel({
@@ -28,6 +29,7 @@ export function DayCarousel({
   showIcons,
   isLoading,
   isError,
+  onScrollFractionChange,
 }: DayCarouselProps) {
   const [selectedDay, setSelectedDay] = useAtom(selectedDayAtom);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -101,6 +103,21 @@ export function DayCarousel({
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     function onScroll() {
+      // Fire fraction callback first — ungated, runs every frame.
+      if (!el) return;
+      const containerWidth = el.offsetWidth;
+      const fraction =
+        containerWidth > 0
+          ? Math.max(
+              0,
+              Math.min(
+                1,
+                el.scrollLeft / (containerWidth * (dayOptions.length - 1)),
+              ),
+            )
+          : 0;
+      onScrollFractionChange?.(fraction);
+
       if (debounceTimer !== null) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(updateAtomFromScroll, 120);
     }
@@ -108,6 +125,7 @@ export function DayCarousel({
     const supportsScrollEnd = "onscrollend" in window;
     if (supportsScrollEnd) {
       el.addEventListener("scrollend", updateAtomFromScroll);
+      el.addEventListener("scroll", onScroll);
     } else {
       el.addEventListener("scroll", onScroll);
     }
@@ -115,12 +133,14 @@ export function DayCarousel({
     return () => {
       if (supportsScrollEnd) {
         el.removeEventListener("scrollend", updateAtomFromScroll);
+        el.removeEventListener("scroll", onScroll);
       } else {
         el.removeEventListener("scroll", onScroll);
-        if (debounceTimer !== null) clearTimeout(debounceTimer);
       }
+      // Clear debounce in both branches — onScroll sets it regardless of scrollend support.
+      if (debounceTimer !== null) clearTimeout(debounceTimer);
     };
-  }, [setSelectedDay]);
+  }, [setSelectedDay, onScrollFractionChange]);
 
   // Resize: jump to correct panel without animation
   useEffect(() => {

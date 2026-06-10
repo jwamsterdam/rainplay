@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { DayCarousel } from "../components/DayCarousel";
 import { LocationSelector } from "../components/LocationSelector";
@@ -61,6 +61,13 @@ export function WeatherScreen() {
   const selectedDateLabel = useMemo(() => headerDateLabel(hourly, day), [day, hourly]);
   const temperature = forecast.data?.currentTemperature ?? 18;
 
+  // Scroll-fraction ref: written by DayCarousel on every scroll frame,
+  // read by SegmentedControl's RAF loop. Never triggers React re-renders.
+  const scrollFractionRef = useRef<number>(0);
+  const handleScrollFraction = useCallback((fraction: number) => {
+    scrollFractionRef.current = fraction;
+  }, []);
+
   return (
     <main className="app-shell">
       <section className="weather-hero" aria-label="Huidig weer">
@@ -103,6 +110,7 @@ export function WeatherScreen() {
           showIcons={showIcons}
           isLoading={forecast.isLoading}
           isError={forecast.isError}
+          onScrollFractionChange={handleScrollFraction}
         />
 
         <div className="control-stack">
@@ -120,6 +128,7 @@ export function WeatherScreen() {
             onChange={setDay}
             options={dayOptions}
             value={day}
+            scrollFractionRef={scrollFractionRef}
           />
         </div>
 
