@@ -6,12 +6,12 @@ export function useForecastQuery(location: ForecastLocation) {
     queryKey: ["forecast", location.latitude, location.longitude],
     queryFn: () => fetchOpenMeteoForecast(location),
 
-    // Weerdata is na 5 min "oud" — een window-focus daarna triggert een fetch.
+    // Data is 5 min vers; daarna triggert een window-focus of reconnect een fetch.
     staleTime: 5 * 60 * 1000,
 
-    // Prik elke 10 min een achtergrond-fetch zolang de app open is.
-    refetchInterval: 10 * 60 * 1000,
-    // Niet pollen als de tab niet zichtbaar is (batterij-vriendelijk op iPhone).
+    // Geen actieve achtergrond-polling — data ververst alleen wanneer de
+    // gebruiker terugkomt naar de app of internet herstelt.
+    refetchInterval: false,
     refetchIntervalInBackground: false,
 
     // Herlaad zodra de gebruiker terugkomt naar de app (o.a. na lock-screen).
