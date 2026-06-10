@@ -198,7 +198,12 @@ const CHART_MARGIN_LEFT = 4;
 const CHART_MARGIN_TOP = 14;
 const CHART_MARGIN_BOTTOM = 8;
 
-const N_STEPS = 8;
+// More steps → smoother gradient transitions (especially night→day).
+// 20 steps gives ~1.5 px per step on a typical 30 px bar — imperceptible staircase.
+const N_STEPS = 20;
+// Extend each bar 0.5 px on each side so sub-pixel antialiasing gaps between
+// adjacent cells are covered by overlapping paint (not visible white seams).
+const OVERHANG = 0.5;
 
 function makeGradientShape(hours: HourlyWeather[], colors: CellColors) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -221,7 +226,11 @@ function makeGradientShape(hours: HourlyWeather[], colors: CellColors) {
           const color = t <= 0.5
             ? interpolateRgba(leftColor, midColor, t * 2)
             : interpolateRgba(midColor, rightColor, (t - 0.5) * 2);
-          return <rect key={j} x={x + j * stepW} y={y} width={stepW} height={height} fill={color} />;
+          // First sub-rect: extend left by OVERHANG to cover gap with previous cell.
+          // Last sub-rect: extend right by OVERHANG to cover gap with next cell.
+          const rx = x + j * stepW - (j === 0 ? OVERHANG : 0);
+          const rw = stepW + (j === 0 || j === N_STEPS - 1 ? OVERHANG : 0);
+          return <rect key={j} x={rx} y={y} width={rw} height={height} fill={color} />;
         })}
       </g>
     );
