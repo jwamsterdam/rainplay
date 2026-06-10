@@ -310,12 +310,13 @@ export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRai
               />
             )}
 
-            {/* Time labels below — rotated vertical, "8:00" format */}
+            {/* Time labels below — rotated vertical, "8:00" format, one per data point */}
             <XAxis
               xAxisId="labels"
               dataKey="time"
               tick={<VerticalTimeTick />}
               height={36}
+              interval={0}
               axisLine={{ stroke: "#dfe6ee", strokeWidth: 1 }}
               tickLine={false}
               padding={{ left: 0, right: 0 }}
