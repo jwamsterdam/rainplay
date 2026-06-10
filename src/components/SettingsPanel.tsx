@@ -1,21 +1,12 @@
 import { useRef } from "react";
 import { ToggleButton } from "./ToggleButton";
+import { defaultCellColors } from "./cellColors";
+import type { CellColors } from "./cellColors";
 
-export type CellColors = {
-  sun: string;
-  partly: string;
-  cloud: string;
-  rain: string;
-  night: string;
-};
-
-export const defaultCellColors: CellColors = {
-  sun: "rgba(255, 196, 0, 0.24)",
-  partly: "rgba(243, 204, 73, 0.15)",
-  cloud: "rgba(148, 191, 255, 0.15)",
-  rain: "rgba(139, 149, 156, 0.37)",
-  night: "rgba(10, 10, 10, 0.72)",
-};
+// Re-export so existing import sites that pulled these from SettingsPanel keep
+// working; the source of truth now lives in the lightweight ./cellColors module.
+export { defaultCellColors };
+export type { CellColors };
 
 type ColorKey = keyof CellColors;
 

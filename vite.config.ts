@@ -68,4 +68,16 @@ export default defineConfig({
   resolve: {
     dedupe: ["react", "react-dom"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split Recharts (en zijn d3/victory-deps) in een eigen chunk: lost de
+        // >500kB chunk-waarschuwing op en laat de zware grafiekcode apart cachen
+        // los van app-code die vaker verandert.
+        manualChunks: {
+          recharts: ["recharts"],
+        },
+      },
+    },
+  },
 });

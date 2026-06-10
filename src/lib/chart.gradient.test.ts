@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildSkyGradientStops, cellFill, mixRgba } from "./chart";
-import type { CellColors } from "../components/SettingsPanel";
+import type { CellColors } from "../components/cellColors";
 import type { HourlyWeather, WeatherKind } from "../types";
 
 const colors: CellColors = {

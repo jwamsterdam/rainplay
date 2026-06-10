@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useAtom } from "jotai";
 import { DayChartRecharts } from "./DayChartRecharts";
-import type { CellColors } from "./SettingsPanel";
+import type { CellColors } from "./cellColors";
 import { visibleHoursForSelection, visiblePointsForTodayHorizon } from "../lib/weatherView";
 import { dayOptions, selectedDayAtom } from "../state/weatherAtoms";
 import type { ForecastPoint, HorizonOption, HourlyWeather } from "../types";
@@ -34,6 +34,13 @@ export function DayCarousel({
   const [selectedDay, setSelectedDay] = useAtom(selectedDayAtom);
   const containerRef = useRef<HTMLDivElement>(null);
   const isScrollingProgrammatically = useRef(false);
+
+  // Always-current selected day, read inside the scroll listener without
+  // re-subscribing it on every day change (which a closure over `selectedDay`
+  // would force). Lets us skip the atom write when a swipe settles on the
+  // already-selected day.
+  const selectedDayRef = useRef(selectedDay);
+  selectedDayRef.current = selectedDay;
 
   const hoursVandaag = useMemo(
     () => visiblePointsForTodayHorizon(hourly, minutely15, horizon),
@@ -97,6 +104,10 @@ export function DayCarousel({
       const index = Math.round(el.scrollLeft / containerWidth);
       const clamped = Math.max(0, Math.min(dayOptions.length - 1, index));
       const day = dayOptions[clamped];
+      // Skip redundant writes when the swipe settles on the already-selected
+      // day — avoids re-rendering WeatherScreen (and reconciling all panels)
+      // for a no-op change.
+      if (day === selectedDayRef.current) return;
       setSelectedDay(day);
     }
 

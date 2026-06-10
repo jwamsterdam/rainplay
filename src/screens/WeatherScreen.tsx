@@ -1,10 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { DayCarousel } from "../components/DayCarousel";
 import { LocationSelector } from "../components/LocationSelector";
 import { SegmentedControl } from "../components/SegmentedControl";
-import { SettingsPanel, defaultCellColors } from "../components/SettingsPanel";
-import type { CellColors } from "../components/SettingsPanel";
+import { defaultCellColors } from "../components/cellColors";
+import type { CellColors } from "../components/cellColors";
+
+// Lazy-loaded so the heavy settings UI (colour pickers, icons) stays out of the
+// initial bundle — it only mounts when the gear is tapped.
+const SettingsPanel = lazy(() =>
+  import("../components/SettingsPanel").then((m) => ({ default: m.SettingsPanel })),
+);
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
 import { bestOutdoorWindow, bestStartTime, bestWindowLabel, outdoorSummaryLabel } from "../lib/chart";
 import { headerDateLabel, visibleHoursForSelection, visiblePointsForTodayHorizon } from "../lib/weatherView";
@@ -136,17 +142,19 @@ export function WeatherScreen() {
       </section>
 
       {settingsOpen && (
-        <SettingsPanel
-          colors={cellColors}
-          onColorsChange={setCellColors}
-          showTemp={showTemp}
-          showRain={showRain}
-          showIcons={showIcons}
-          onShowTempChange={setShowTemp}
-          onShowRainChange={setShowRain}
-          onShowIconsChange={setShowIcons}
-          onClose={() => setSettingsOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <SettingsPanel
+            colors={cellColors}
+            onColorsChange={setCellColors}
+            showTemp={showTemp}
+            showRain={showRain}
+            showIcons={showIcons}
+            onShowTempChange={setShowTemp}
+            onShowRainChange={setShowRain}
+            onShowIconsChange={setShowIcons}
+            onClose={() => setSettingsOpen(false)}
+          />
+        </Suspense>
       )}
     </main>
   );

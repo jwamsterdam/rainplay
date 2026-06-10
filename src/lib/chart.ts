@@ -1,5 +1,5 @@
 import type { HourlyWeather, WeatherKind } from "../types";
-import type { CellColors } from "../components/SettingsPanel";
+import type { CellColors } from "../components/cellColors";
 
 export type OutdoorWindow = {
   endTime: string;

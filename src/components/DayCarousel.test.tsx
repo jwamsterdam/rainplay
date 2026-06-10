@@ -203,6 +203,39 @@ describe("DayCarousel", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Test 3b: P1 guard — settling on the ALREADY-selected day is a no-op.
+  //
+  // The scroll→atom handler skips the write when the swipe settles back on the
+  // currently-selected day (selectedDayRef guard). We assert the user-observable
+  // outcome: subscribing to the atom, a same-day settle produces ZERO change
+  // notifications, while a different-day settle produces exactly one. This proves
+  // the redundant write is skipped without inspecting React-internal renders.
+  // -------------------------------------------------------------------------
+  it("does NOT write the atom when a swipe settles on the already-selected day", () => {
+    const { store, container } = renderCarousel({}, "Overmorgen");
+
+    act(() => { vi.runAllTimers(); }); // flush mount guard
+
+    // Count atom-change notifications from now on.
+    let changeCount = 0;
+    const unsub = store.sub(selectedDayAtom, () => { changeCount += 1; });
+
+    // User swipes but settles back on panel 2 (Overmorgen) — the current day.
+    act(() => { simulateUserScrollEnd(container, 2); });
+
+    expect(store.get(selectedDayAtom)).toBe("Overmorgen");
+    expect(changeCount).toBe(0); // redundant write skipped by the P1 guard
+
+    // Sanity: a settle on a DIFFERENT day (panel 1 = Morgen) DOES write once.
+    act(() => { simulateUserScrollEnd(container, 1); });
+
+    expect(store.get(selectedDayAtom)).toBe("Morgen");
+    expect(changeCount).toBe(1);
+
+    unsub();
+  });
+
+  // -------------------------------------------------------------------------
   // Test 4: isScrollingProgrammatically guard — blocks scrollend during
   // a programmatic scroll before the clearing setTimeout fires
   // -------------------------------------------------------------------------

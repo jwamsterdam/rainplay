@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, ReferenceLine } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
-import { defaultCellColors } from "./SettingsPanel";
-import type { CellColors } from "./SettingsPanel";
+import { defaultCellColors } from "./cellColors";
+import type { CellColors } from "./cellColors";
 import { buildSkyGradientStops } from "../lib/chart";
 import { ToggleButton } from "./ToggleButton";
 
@@ -325,12 +325,18 @@ function useElementSize<T extends HTMLElement>() {
 
 // --- Main component ---
 
-export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRain, showIcons, isToday }: Props) {
-  const [tempMin, tempMax] = tempDomain(hours);
+function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons, isToday }: Props) {
+  const [tempMin, tempMax] = useMemo(() => tempDomain(hours), [hours]);
   const colors = cellColors ?? defaultCellColors;
 
-  const kindMap: KindMap = Object.fromEntries(hours.map(h => [h.time, h.kind]));
-  const scoreMap: Record<string, number> = Object.fromEntries(hours.map(h => [h.time, h.score]));
+  const kindMap = useMemo<KindMap>(
+    () => Object.fromEntries(hours.map(h => [h.time, h.kind])),
+    [hours],
+  );
+  const scoreMap = useMemo<Record<string, number>>(
+    () => Object.fromEntries(hours.map(h => [h.time, h.score])),
+    [hours],
+  );
   const [shellRef, { width, height }] = useElementSize<HTMLDivElement>();
   const [plotRect, setPlotRect] = useState<PlotRect | null>(null);
 
@@ -456,3 +462,10 @@ export function DayChartRecharts({ hours, horizon, cellColors, showTemp, showRai
     </div>
   );
 }
+
+// Memoized so a day-flip (selectedDay atom change) re-renders WeatherScreen
+// without reconciling the 3 non-target panels' Recharts trees. All props passed
+// from DayCarousel are referentially stable across a day-flip (hours is per-day
+// useMemo'd, cellColors comes from stable state, the rest are primitives), so a
+// default shallow compare correctly skips unchanged panels.
+export const DayChartRecharts = memo(DayChartRechartsBase);
