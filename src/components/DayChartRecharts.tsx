@@ -136,8 +136,9 @@ function ScoreTick(props: { x?: number | string; y?: number | string; payload?: 
 
 // --- Helpers ---
 
-// "08:00" → "8:00", "12:00" → "12:00"
+// "08:00" → "8:00", "12:00" → "12:00", "ma" → "ma" (week-view dag-namen)
 function formatTick(t: string): string {
+  if (!t.includes(":")) return t;
   const [hh = "0", mm = "00"] = t.split(":");
   return `${parseInt(hh, 10)}:${mm}`;
 }
