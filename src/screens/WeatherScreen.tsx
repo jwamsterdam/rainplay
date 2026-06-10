@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
-import { DayChartRecharts } from "../components/DayChartRecharts";
+import { DayCarousel } from "../components/DayCarousel";
 import { LocationSelector } from "../components/LocationSelector";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { SettingsPanel, defaultCellColors } from "../components/SettingsPanel";
@@ -93,13 +93,17 @@ export function WeatherScreen() {
           </span>
         </div>
 
-        {forecast.isError ? (
-          <div className="loading-panel">Weerdata niet beschikbaar</div>
-        ) : forecast.isLoading ? (
-          <div className="loading-panel">Weer laden</div>
-        ) : (
-          <DayChartRecharts hours={visibleHours} horizon={horizon} cellColors={cellColors} showTemp={showTemp} showRain={showRain} showIcons={showIcons} />
-        )}
+        <DayCarousel
+          hourly={hourly}
+          minutely15={minutely15}
+          horizon={horizon}
+          cellColors={cellColors}
+          showTemp={showTemp}
+          showRain={showRain}
+          showIcons={showIcons}
+          isLoading={forecast.isLoading}
+          isError={forecast.isError}
+        />
 
         <div className="control-stack">
           <SegmentedControl

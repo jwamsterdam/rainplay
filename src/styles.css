@@ -723,6 +723,27 @@ button {
   text-align: center;
 }
 
+/* --- Carousel --- */
+
+.chart-carousel {
+  display: flex;
+  overflow-x: scroll;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.chart-carousel::-webkit-scrollbar {
+  display: none;
+}
+.chart-carousel-panel {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  min-width: 0;
+}
+
 /* --- */
 
 .attribution {

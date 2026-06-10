@@ -12,6 +12,17 @@ Score formulas, best-window calculations, and other decision logic must live in 
 ## Candidate lessons
 These are proposals. Do not treat them as binding until accepted.
 
+### Candidate - jsdom scrollend / scrollTo mocking pattern (Vitest + jsdom v29)
+`"onscrollend" in window` evalueert naar `true` in Vitest's jsdom-omgeving (v29+). Componenten die op deze vlag branchen gebruiken daardoor `addEventListener("scrollend", ...)` in tests — niet het debounced scroll-fallbackpad. Test files moeten:
+1. `new Event("scrollend")` dispatchen — niet `"scroll"` — om het scroll→atom-pad te triggeren.
+2. `el.scrollTo = vi.fn()` stubbben op de container vóór een atom-wijziging, want jsdom-div-elementen implementeren `scrollTo` niet.
+3. Mount-time `setTimeout(0)`-guards flushen met `act(() => { vi.runAllTimers(); })` vóór gesimuleerde user-swipes, anders staat `isScrollingProgrammatically` nog op `true` en no-opt de handler.
+Status: pending review.
+
+### Candidate - CSS scroll-snap: scroll-snap-stop: always verplicht op iOS
+Zonder `scroll-snap-stop: always` op de carousel-panelen kan iOS bij een snelle swipe meerdere panelen overslaan. `scroll-snap-stop: always` beperkt elke swipe tot maximaal één panel. Dit is niet zichtbaar in de desktop browser-simulator — testen op een echte iPhone is verplicht voor scroll-snap carousels.
+Status: pending review.
+
 ### Candidate - Prefer component tests for interactive chart toggles
 Reason: checkbox-driven chart visibility is user-visible behavior and easy to regress.
 Status: pending review.
