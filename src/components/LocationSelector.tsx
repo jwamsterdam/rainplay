@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import type { ForecastLocation } from "../api/openMeteo";
-import { geocodeLocation, hasGoogleMapsKey } from "../api/googleMaps";
+import { MIN_QUERY_LENGTH, searchLocations } from "../api/geocoding";
 import {
   defaultLocation,
-  defaultLocations,
   locationMenuOpenAtom,
   locationStatusAtom,
   savedLocationsAtom,
@@ -16,9 +15,7 @@ type LocationSelectorProps = {
   onUseCurrentLocation: () => Promise<void>;
 };
 
-const emptyForm = {
-  query: "",
-};
+const SEARCH_DEBOUNCE_MS = 250;
 
 export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps) {
   const [isOpen, setIsOpen] = useAtom(locationMenuOpenAtom);
@@ -26,36 +23,57 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
   const [savedLocations, setSavedLocations] = useAtom(savedLocationsAtom);
   const locationStatus = useAtomValue(locationStatusAtom);
   const setMenuOpen = useSetAtom(locationMenuOpenAtom);
-  const [form, setForm] = useState(emptyForm);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<ForecastLocation[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const gpsLocation = selectedLocation.source === "gps" ? selectedLocation : null;
 
-  const addLocation = async () => {
-    setFormError(null);
-
-    if (!hasGoogleMapsKey()) {
-      setFormError("Google API key ontbreekt.");
+  // Debounced autocomplete: fetch suggestions as the user types, cancelling any
+  // in-flight request so only the latest query's results land.
+  useEffect(() => {
+    const search = query.trim();
+    if (search.length < MIN_QUERY_LENGTH) {
+      setSuggestions([]);
+      setIsSearching(false);
+      setSearchError(null);
       return;
     }
 
-    setIsAddingLocation(true);
+    const controller = new AbortController();
+    setIsSearching(true);
+    setSearchError(null);
 
-    try {
-      const location = await geocodeLocation(form.query);
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchLocations(search, controller.signal);
+        setSuggestions(results);
+        setSearchError(results.length === 0 ? "Geen plaatsen gevonden." : null);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setSearchError("Zoeken lukte niet.");
+        setSuggestions([]);
+      } finally {
+        if (!controller.signal.aborted) setIsSearching(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
 
-      setSavedLocations((locations) => {
-        if (locations.some((savedLocation) => isSameLocation(savedLocation, location))) return locations;
-        return [...locations, location];
-      });
-      setSelectedLocation(location);
-      setForm(emptyForm);
-      setMenuOpen(false);
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Locatie toevoegen lukte niet.");
-    } finally {
-      setIsAddingLocation(false);
-    }
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  const chooseLocation = (location: ForecastLocation) => {
+    setSavedLocations((locations) => {
+      if (locations.some((savedLocation) => isSameLocation(savedLocation, location))) return locations;
+      return [...locations, location];
+    });
+    setSelectedLocation(location);
+    setQuery("");
+    setSuggestions([]);
+    setSearchError(null);
+    setMenuOpen(false);
   };
 
   return (
@@ -134,23 +152,39 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
 
           <form
             className="location-form"
-            aria-label="Locatie toevoegen"
+            aria-label="Locatie zoeken"
             onSubmit={(event) => {
               event.preventDefault();
-              void addLocation();
+              if (suggestions[0]) chooseLocation(suggestions[0]);
             }}
           >
             <input
-              aria-label="Plaats of adres"
-              onChange={(event) => setForm({ query: event.target.value })}
-              placeholder="Plaats of adres"
+              aria-label="Plaats zoeken"
+              autoComplete="off"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Plaats zoeken"
               type="text"
-              value={form.query}
+              value={query}
             />
-            {formError ? <p className="location-form-error">{formError}</p> : null}
-            <button className="location-add-button" disabled={isAddingLocation} type="submit">
-              {isAddingLocation ? "Zoeken..." : "Toevoegen"}
-            </button>
+            {isSearching ? <p className="location-form-hint">Zoeken...</p> : null}
+            {searchError ? <p className="location-form-error">{searchError}</p> : null}
+            {suggestions.length > 0 ? (
+              <ul className="location-suggestions" role="listbox" aria-label="Zoekresultaten">
+                {suggestions.map((suggestion) => (
+                  <li key={locationKey(suggestion)}>
+                    <button
+                      className="location-suggestion"
+                      onClick={() => chooseLocation(suggestion)}
+                      role="option"
+                      aria-selected={false}
+                      type="button"
+                    >
+                      {suggestion.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </form>
         </div>
       ) : null}

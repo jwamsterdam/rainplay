@@ -162,6 +162,27 @@ function VerticalTimeTick(props: { x?: number | string; y?: number | string; pay
   );
 }
 
+// Custom label for the "nu" reference line: a small, subtle white oval behind
+// the red "nu" text so it stays legible over dark (night) gradient backgrounds.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function NowLabel(props: any) {
+  const vb = props.viewBox ?? {};
+  const lineX = Number(vb.x ?? 0);
+  const top = Number(vb.y ?? 0);
+  // Sit just inside the line at the top of the plot; nudge left so the oval
+  // never clips past the right chart edge.
+  const cx = lineX - 11;
+  const cy = top + 9;
+  return (
+    <g pointerEvents="none">
+      <ellipse cx={cx} cy={cy} rx={12} ry={8.5} fill="rgba(255, 255, 255, 0.9)" />
+      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="rgba(255, 59, 48, 0.95)" fontSize={10} fontWeight={700}>
+        nu
+      </text>
+    </g>
+  );
+}
+
 // Find the closest time label in the data to the current wall-clock time
 function nearestNowLabel(hours: HourlyWeather[]): string | null {
   if (hours.length === 0) return null;
@@ -419,7 +440,7 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
                 stroke="rgba(255, 59, 48, 0.75)"
                 strokeWidth={1.5}
                 strokeDasharray="4 3"
-                label={{ value: "nu", position: "insideTopRight", fill: "rgba(255, 59, 48, 0.85)", fontSize: 10, fontWeight: 600 }}
+                label={<NowLabel />}
               />
             )}
 
