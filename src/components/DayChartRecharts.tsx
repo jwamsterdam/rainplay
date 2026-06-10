@@ -210,6 +210,28 @@ function makePlotRectProbe(onMeasure: (rect: PlotRect) => void) {
   let top = 0;
   let bottom = 0;
   let pending: PlotRect | null = null;
+  let scheduled = false;
+
+  // Flush the accumulated rect AFTER the current render commits. Calling
+  // onMeasure (a setState) synchronously inside the shape render is illegal in
+  // React ("Cannot update a component while rendering a different component")
+  // and crashed the whole screen. rAF defers it; the `pending` equality guard
+  // prevents an update loop once the rect is stable.
+  function flush() {
+    scheduled = false;
+    if (minX === Infinity || maxRight === -Infinity) return;
+    const next: PlotRect = { x: minX, y: top, width: maxRight - minX, height: bottom - top };
+    if (
+      !pending ||
+      pending.x !== next.x ||
+      pending.y !== next.y ||
+      pending.width !== next.width ||
+      pending.height !== next.height
+    ) {
+      pending = next;
+      onMeasure(next);
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return function ProbeBar(props: any) {
@@ -229,16 +251,9 @@ function makePlotRectProbe(onMeasure: (rect: PlotRect) => void) {
       maxRight = Math.max(maxRight, x + width);
       top = y;
       bottom = y + height;
-      const next: PlotRect = { x: minX, y: top, width: maxRight - minX, height: bottom - top };
-      if (
-        !pending ||
-        pending.x !== next.x ||
-        pending.y !== next.y ||
-        pending.width !== next.width ||
-        pending.height !== next.height
-      ) {
-        pending = next;
-        onMeasure(next);
+      if (!scheduled) {
+        scheduled = true;
+        requestAnimationFrame(flush);
       }
     }
     // Probe only — paint nothing.
