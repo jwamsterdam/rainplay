@@ -76,7 +76,13 @@ export function bestOutdoorWindow(hours: HourlyWeather[]): OutdoorWindow | null 
     hour.score >= minimumGoodScore &&
     isDry(hour),
   );
-  const fallbackWindows = contiguousWindows(hours, (hour) => hour.score >= bestScore && hour.kind !== "rain");
+  const bestNonRainScore = Math.max(
+    ...hours
+      .filter((hour) => hour.kind !== "rain")
+      .map((hour) => hour.score),
+    Number.NEGATIVE_INFINITY,
+  );
+  const fallbackWindows = contiguousWindows(hours, (hour) => hour.score >= bestNonRainScore && hour.kind !== "rain");
   const scoreOnlyWindows = contiguousWindows(hours, (hour) => hour.score >= bestScore);
   const windows = brightWindows.length > 0
     ? brightWindows

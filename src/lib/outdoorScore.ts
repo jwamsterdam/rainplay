@@ -32,11 +32,12 @@ function precipitationPenalty(mm: number, isRainCoded: boolean): number {
 
 function temperaturePenalty(c: number): number {
   if (c >= 14 && c <= 22) return 0;   // ideaal
+  if (c > 22 && c <= 26)   return 0.5;
+  if (c > 26 && c <= 30)   return 1.5;
+  if (c > 30)              return 4;
   if (c >= 12)             return 1;   // fris maar prima
   if (c >= 8)              return 2;   // koud voor wielrenner
   if (c >= 4)              return 3;   // erg koud
-  if (c > 22 && c <= 26)   return 0.5;
-  if (c > 26 && c <= 30)   return 1.5;
   return 4;                            // <4°C of >30°C
 }
 
