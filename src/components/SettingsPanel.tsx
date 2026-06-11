@@ -122,10 +122,13 @@ type Diagnostics = {
   version: string;
   innerHeight: number;
   screenHeight: number;
+  availHeight: number;
+  clientHeight: number;
   visualViewportHeight: number | null;
   dvh: number;
   svh: number;
   lvh: number;
+  safeAreaTop: number;
   safeAreaBottom: number;
   displayMode: string;
 };
@@ -158,12 +161,15 @@ function readDiagnostics(): Diagnostics {
     version: __APP_VERSION__,
     innerHeight: window.innerHeight,
     screenHeight: window.screen?.height ?? 0,
+    availHeight: window.screen?.availHeight ?? 0,
+    clientHeight: document.documentElement.clientHeight,
     visualViewportHeight: window.visualViewport
       ? Math.round(window.visualViewport.height)
       : null,
     dvh: measureCssHeight("100dvh"),
     svh: measureCssHeight("100svh"),
     lvh: measureCssHeight("100lvh"),
+    safeAreaTop: measureCssHeight("env(safe-area-inset-top)"),
     safeAreaBottom: measureCssHeight("env(safe-area-inset-bottom)"),
     displayMode: detectDisplayMode(),
   };
@@ -181,11 +187,12 @@ function DiagnosticsBlock() {
   return (
     <div className="settings-diagnostics" aria-label="Diagnostiek">
       <div className="settings-diagnostics-title">Diagnostiek</div>
-      <div>v {diag.version}</div>
+      <div>v {diag.version} · {diag.displayMode}</div>
       <div>innerH {diag.innerHeight} · screenH {diag.screenHeight}</div>
+      <div>avail {diag.availHeight} · clientH {diag.clientHeight}</div>
       <div>visualVP {diag.visualViewportHeight ?? "—"}</div>
       <div>dvh {diag.dvh} · svh {diag.svh} · lvh {diag.lvh}</div>
-      <div>safe-bottom {diag.safeAreaBottom} · {diag.displayMode}</div>
+      <div>safe-top {diag.safeAreaTop} · safe-bottom {diag.safeAreaBottom}</div>
     </div>
   );
 }
