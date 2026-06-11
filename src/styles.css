@@ -378,7 +378,9 @@ button {
   flex-shrink: 0;
   width: min(100%, 500px);
   margin: -20px auto 0;
-  padding: 14px 10px max(20px, env(safe-area-inset-bottom));
+  /* Trim a little off the home-indicator clearance so the attribution sits a
+     touch lower, while still keeping it clear of the indicator itself. */
+  padding: 14px 10px max(10px, calc(env(safe-area-inset-bottom) - 8px));
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   /* Solid white (not the translucent surface) so the sheet's colour matches the
      body fill below it — no separate "white bar" seam at the home-indicator gap. */
