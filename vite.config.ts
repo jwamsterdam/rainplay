@@ -58,8 +58,11 @@ export default defineConfig({
         short_name: "Rainplay",
         description: "Een simpele buitenweer-app voor vakantie.",
         start_url: "/",
-        display: "fullscreen",
-        display_override: ["fullscreen", "standalone"],
+        // standalone is the iOS-correct value (fullscreen is unsupported on iOS
+        // and can leave the app reporting "browser" / showing chrome). standalone
+        // gives an edge-to-edge home-screen app with no Safari toolbars.
+        display: "standalone",
+        display_override: ["standalone"],
         background_color: "#bfe1f7",
         theme_color: "#bfe1f7",
         orientation: "portrait",

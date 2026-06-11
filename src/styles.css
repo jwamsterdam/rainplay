@@ -13,7 +13,7 @@
 html {
   height: 100%;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
   overflow: hidden;
   /* Paint the canvas white so the iOS home-indicator gap and Safari
      toolbar gap below the app-shell never show a system background colour */
@@ -25,7 +25,7 @@ body {
   min-width: 320px;
   height: 100%;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
   overflow: hidden;
   /* white so any sliver below the sheet (PWA safe-area / Safari toolbars) blends in */
   background: var(--color-surface-solid);
@@ -34,7 +34,7 @@ body {
 #root {
   height: 100%;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
 }
 
 button {
@@ -46,17 +46,16 @@ button {
   position: relative;
   display: flex;
   flex-direction: column;
-  /* Over-fill-and-clip: 100lvh = the LARGEST viewport, which in a standalone
-     PWA spans the full physical screen and reliably reaches into the rounded
-     bottom corners / home-indicator band on every iOS version; any overflow is
-     clipped by `overflow: hidden` below. 100svh is the floor so content stays
-     reachable when browser chrome is visible; 100vh is the legacy fallback for
-     engines without svh/lvh. (Earlier strategies — dvh, position:fixed, and a
-     JS --app-height from innerHeight — each under-filled the home-indicator band
-     on iPhone 15, exposing the system background below the sheet.) */
+  /* Fill the DYNAMIC visible viewport (dvh). On-device diagnostics on an
+     iPhone 15 showed the real usable height = innerHeight = dvh = svh = 793,
+     while lvh = 852 = the full physical screen INCLUDING browser chrome. Using
+     lvh over-filled by ~59px, pushing the bottom of the sheet (the Open-Meteo
+     attribution) below the visible area where it was clipped by the Safari
+     toolbar. dvh tracks the actually-visible area: in a true standalone PWA it
+     equals the full screen, in a Safari tab it tracks the area above the
+     toolbar. 100vh is the legacy fallback. */
   min-height: 100vh;
-  min-height: 100svh;
-  height: 100lvh;
+  min-height: 100dvh;
   overflow: hidden;
   /* Full-frame sky behind everything; the sheet floats as a centred card on top,
      so the background shows through beside it. Fallback colour blends the bottom. */

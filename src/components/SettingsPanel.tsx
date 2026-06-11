@@ -141,9 +141,19 @@ function measureCssHeight(value: string): number {
   return Math.round(px);
 }
 
+// Distinguish a true installed/home-screen launch from a Safari tab. iOS does
+// not always match (display-mode: standalone) for `display: fullscreen`
+// manifests, so also check the iOS-only navigator.standalone flag.
+function detectDisplayMode(): string {
+  const mm = (q: string) => window.matchMedia?.(q).matches ?? false;
+  const iosHomeScreen = (window.navigator as { standalone?: boolean }).standalone === true;
+  if (mm("(display-mode: fullscreen)")) return iosHomeScreen ? "fullscreen/ios" : "fullscreen";
+  if (mm("(display-mode: standalone)") || iosHomeScreen) return "standalone";
+  if (mm("(display-mode: minimal-ui)")) return "minimal-ui";
+  return "browser";
+}
+
 function readDiagnostics(): Diagnostics {
-  const standalone =
-    window.matchMedia?.("(display-mode: standalone)").matches ?? false;
   return {
     version: __APP_VERSION__,
     innerHeight: window.innerHeight,
@@ -155,7 +165,7 @@ function readDiagnostics(): Diagnostics {
     svh: measureCssHeight("100svh"),
     lvh: measureCssHeight("100lvh"),
     safeAreaBottom: measureCssHeight("env(safe-area-inset-bottom)"),
-    displayMode: standalone ? "standalone" : "browser",
+    displayMode: detectDisplayMode(),
   };
 }
 
