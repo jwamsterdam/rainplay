@@ -1,10 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchOpenMeteoForecast, type ForecastLocation } from "../api/openMeteo";
 
-export function useForecastQuery(location: ForecastLocation) {
+export function useForecastQuery(location: ForecastLocation, enabled = true) {
   return useQuery({
     queryKey: ["forecast", location.latitude, location.longitude],
     queryFn: () => fetchOpenMeteoForecast(location),
+
+    // Gated by the caller: while GPS is still resolving on a cold start we hold
+    // off, so we don't fire a throwaway request for the placeholder default
+    // location and then immediately a second one for the real GPS coordinates.
+    enabled,
 
     // Data is 5 min vers; daarna triggert een window-focus of reconnect een fetch.
     staleTime: 5 * 60 * 1000,

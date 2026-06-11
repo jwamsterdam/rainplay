@@ -19,6 +19,7 @@ import {
   dayOptions,
   horizonOptions,
   locationErrorAtom,
+  locationStatusAtom,
   selectedDayAtom,
   selectedHorizonAtom,
   selectedLocationAtom,
@@ -43,8 +44,19 @@ export function WeatherScreen() {
   const [horizon, setHorizon] = useAtom(selectedHorizonAtom);
   const location = useAtomValue(selectedLocationAtom);
   const locationError = useAtomValue(locationErrorAtom);
+  const locationStatus = useAtomValue(locationStatusAtom);
   const { refreshLocation } = useCurrentLocation();
-  const forecast = useForecastQuery(location);
+
+  // Hold the forecast until the location is settled, so a cold start with GPS
+  // does NOT fetch once for the placeholder default and again for the real GPS
+  // coords. "Settled" = GPS produced a real location (source no longer default),
+  // or GPS finished without one (denied/unsupported/error) so we use the default.
+  const locationResolved =
+    location.source !== "default" ||
+    locationStatus === "denied" ||
+    locationStatus === "unsupported" ||
+    locationStatus === "error";
+  const forecast = useForecastQuery(location, locationResolved);
   const hourly = forecast.data?.hourly ?? [];
   const minutely15 = forecast.data?.minutely15 ?? [];
   const showHorizonSelector = day === "Vandaag";
@@ -114,7 +126,7 @@ export function WeatherScreen() {
           showTemp={showTemp}
           showRain={showRain}
           showIcons={showIcons}
-          isLoading={forecast.isLoading}
+          isLoading={forecast.isLoading || !locationResolved}
           isError={forecast.isError}
           onScrollFractionChange={handleScrollFraction}
           onRetry={() => forecast.refetch()}
