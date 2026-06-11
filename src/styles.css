@@ -386,10 +386,11 @@ button {
   flex-shrink: 0;
   width: min(100%, 500px);
   margin: -20px auto 0;
-  /* Use the FULL home-indicator inset so the attribution always clears the
-     indicator, while the sheet's white background fills the rounded corners
-     below it (the app-shell now over-fills to the physical bottom). */
-  padding: 14px 10px max(16px, env(safe-area-inset-bottom));
+  /* About half the home-indicator inset: the attribution sits lower (less white
+     space beneath it) while still clearing the indicator. The sheet's white
+     background still fills the rounded corners below, since the app-shell fills
+     to the physical bottom. */
+  padding: 14px 10px max(10px, calc(env(safe-area-inset-bottom) - 16px));
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   /* Solid white (not the translucent surface) so the sheet's colour matches the
      body fill below it — no separate "white bar" seam at the home-indicator gap. */
