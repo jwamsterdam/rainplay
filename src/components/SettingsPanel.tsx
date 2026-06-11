@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ToggleButton } from "./ToggleButton";
 import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
@@ -110,6 +110,76 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+// --- On-device viewport diagnostic ---
+//
+// Reads LIVE values off the device once on mount so the user can read them from
+// their iPhone and report back. Desktop Chrome hits the device-frame media query
+// and can't reproduce the iOS PWA viewport-fill issue, so this is the only way to
+// see real innerHeight / svh / lvh / safe-area values from the actual device.
+// Probes resolve CSS viewport units by measuring a detached fixed element.
+
+type Diagnostics = {
+  version: string;
+  innerHeight: number;
+  screenHeight: number;
+  visualViewportHeight: number | null;
+  dvh: number;
+  svh: number;
+  lvh: number;
+  safeAreaBottom: number;
+  displayMode: string;
+};
+
+// Measure the resolved pixel height of a CSS length (e.g. "100lvh" or
+// "env(safe-area-inset-bottom)") via a 1px-wide fixed probe element.
+function measureCssHeight(value: string): number {
+  const probe = document.createElement("div");
+  probe.style.cssText = `position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:${value};`;
+  document.body.appendChild(probe);
+  const px = probe.getBoundingClientRect().height;
+  probe.remove();
+  return Math.round(px);
+}
+
+function readDiagnostics(): Diagnostics {
+  const standalone =
+    window.matchMedia?.("(display-mode: standalone)").matches ?? false;
+  return {
+    version: __APP_VERSION__,
+    innerHeight: window.innerHeight,
+    screenHeight: window.screen?.height ?? 0,
+    visualViewportHeight: window.visualViewport
+      ? Math.round(window.visualViewport.height)
+      : null,
+    dvh: measureCssHeight("100dvh"),
+    svh: measureCssHeight("100svh"),
+    lvh: measureCssHeight("100lvh"),
+    safeAreaBottom: measureCssHeight("env(safe-area-inset-bottom)"),
+    displayMode: standalone ? "standalone" : "browser",
+  };
+}
+
+function DiagnosticsBlock() {
+  const [diag, setDiag] = useState<Diagnostics | null>(null);
+
+  useEffect(() => {
+    setDiag(readDiagnostics());
+  }, []);
+
+  if (!diag) return null;
+
+  return (
+    <div className="settings-diagnostics" aria-label="Diagnostiek">
+      <div className="settings-diagnostics-title">Diagnostiek</div>
+      <div>v {diag.version}</div>
+      <div>innerH {diag.innerHeight} · screenH {diag.screenHeight}</div>
+      <div>visualVP {diag.visualViewportHeight ?? "—"}</div>
+      <div>dvh {diag.dvh} · svh {diag.svh} · lvh {diag.lvh}</div>
+      <div>safe-bottom {diag.safeAreaBottom} · {diag.displayMode}</div>
+    </div>
+  );
+}
+
 // --- Component ---
 
 type Props = {
@@ -215,7 +285,7 @@ export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, show
 
         <button className="settings-done" onClick={onClose}>Klaar</button>
 
-        <p className="settings-version">{__APP_VERSION__}</p>
+        <DiagnosticsBlock />
       </div>
     </div>
   );

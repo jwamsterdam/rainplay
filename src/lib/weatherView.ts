@@ -24,7 +24,11 @@ export function visiblePointsForTodayHorizon(
 }
 
 function niceStartIndex(points: ForecastPoint[]): number {
-  // Prefer last :00/:30 before now (round down); fall back to first :00/:30 in data (round up)
+  // Return the FIRST :00/:30 point in the data — i.e. the first whole/half hour
+  // at or after now (the minutely15 series begins at the current quarter-hour).
+  // This is the window's left edge; it is at/after now, so the "nu" marker pins
+  // to the left of +2/+6 uur windows (see lib/nowMarker). Fall back to index 0
+  // if no :00/:30 point exists.
   const idx = points.findIndex(p => p.time.endsWith(":00") || p.time.endsWith(":30"));
   return idx === -1 ? 0 : idx;
 }

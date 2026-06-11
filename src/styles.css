@@ -13,7 +13,7 @@
 html {
   height: 100%;
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
   overflow: hidden;
   /* Paint the canvas white so the iOS home-indicator gap and Safari
      toolbar gap below the app-shell never show a system background colour */
@@ -25,7 +25,7 @@ body {
   min-width: 320px;
   height: 100%;
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
   overflow: hidden;
   /* white so any sliver below the sheet (PWA safe-area / Safari toolbars) blends in */
   background: var(--color-surface-solid);
@@ -34,7 +34,7 @@ body {
 #root {
   height: 100%;
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
 }
 
 button {
@@ -46,14 +46,17 @@ button {
   position: relative;
   display: flex;
   flex-direction: column;
-  /* Fill the exact visual viewport. CSS vh units (100vh/svh/dvh) and
-     position:fixed both resolve inconsistently across iOS versions in a
-     standalone PWA (under-filling the home-indicator band on some, over- on
-     others). --app-height is set from window.innerHeight in JS (see
-     src/lib/appHeight.ts), which reports the real usable height reliably on
-     every iOS version; 100dvh is the pre-JS / non-JS fallback. */
-  min-height: 100dvh;
-  min-height: var(--app-height, 100dvh);
+  /* Over-fill-and-clip: 100lvh = the LARGEST viewport, which in a standalone
+     PWA spans the full physical screen and reliably reaches into the rounded
+     bottom corners / home-indicator band on every iOS version; any overflow is
+     clipped by `overflow: hidden` below. 100svh is the floor so content stays
+     reachable when browser chrome is visible; 100vh is the legacy fallback for
+     engines without svh/lvh. (Earlier strategies — dvh, position:fixed, and a
+     JS --app-height from innerHeight — each under-filled the home-indicator band
+     on iPhone 15, exposing the system background below the sheet.) */
+  min-height: 100vh;
+  min-height: 100svh;
+  height: 100lvh;
   overflow: hidden;
   /* Full-frame sky behind everything; the sheet floats as a centred card on top,
      so the background shows through beside it. Fallback colour blends the bottom. */
@@ -384,9 +387,10 @@ button {
   flex-shrink: 0;
   width: min(100%, 500px);
   margin: -20px auto 0;
-  /* Trim a little off the home-indicator clearance so the attribution sits a
-     touch lower, while still keeping it clear of the indicator itself. */
-  padding: 14px 10px max(10px, calc(env(safe-area-inset-bottom) - 8px));
+  /* Use the FULL home-indicator inset so the attribution always clears the
+     indicator, while the sheet's white background fills the rounded corners
+     below it (the app-shell now over-fills to the physical bottom). */
+  padding: 14px 10px max(16px, env(safe-area-inset-bottom));
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   /* Solid white (not the translucent surface) so the sheet's colour matches the
      body fill below it — no separate "white bar" seam at the home-indicator gap. */
@@ -839,6 +843,24 @@ button {
   text-align: center;
 }
 
+/* Compact on-device viewport readout — version + live height probes. Muted and
+   monospace; lives only in the settings sheet, never affects the main layout. */
+.settings-diagnostics {
+  margin: 12px 0 0;
+  display: grid;
+  gap: 2px;
+  color: var(--color-ink-soft);
+  font-size: 11px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.settings-diagnostics-title {
+  font-weight: 700;
+  opacity: 0.85;
+}
+
 /* --- Carousel --- */
 
 .chart-carousel {
@@ -880,8 +902,9 @@ button {
   }
 
   .app-shell {
-    /* Centred fixed-size device frame on desktop; the explicit height overrides
-       the mobile --app-height fill. */
+    /* Centred fixed-size device frame on desktop; these explicit height/min-height
+       values override the mobile 100lvh/100svh fill (same specificity, later in
+       source order). */
     width: 430px;
     height: 932px;
     min-height: 932px;

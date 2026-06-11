@@ -40,5 +40,26 @@ interpolated-colour `<rect>` elements instead (see `GradientBgLayer` in
 `DayChartRecharts.tsx` and `interpolateRgba` in `src/lib/chart.ts`).
 Status: pending review.
 
+### Candidate - Chart/marker decision logic must be pure, clock-injected, and unit-tested in src/lib
+The "nu" marker silently disappeared on the +2/+6 uur Vandaag charts because its
+position logic (`nowLineX`) lived inside the presentational chart component and
+read the clock directly. It returned null whenever `now` fell outside
+`[firstPoint, lastPoint]` — which is exactly the normal case for a window that
+starts at the first :00/:30 at/after now. Embedded in the component, that edge
+was untestable in jsdom (Recharts/canvas) and shipped unguarded.
+Rule: any chart decision logic that depends on time or on point geometry
+(marker position, best-window, band math) must be a pure function in `src/lib/`
+with `now: Date` injected (never `new Date()` inside), returning a presentation-
+agnostic value (e.g. a [0,1] fraction). The component only projects that value
+to pixels. Then the clamp/band-centre/off-by-one behaviour is unit-tested at the
+right altitude (see `src/lib/nowMarker.ts` + `nowMarker.test.ts`), and an
+integration-seam test proves the producing function yields a renderable result
+for every horizon without fighting the chart in jsdom
+(`src/lib/weatherView.todayHorizon.test.ts`). Watch the clamp boundary: with the
+band-centre model a `now` less than half a band before the first point is a small
+positive interior fraction, not a hard 0 — assert the renderable contract
+(non-null, in range), not an over-specified exact 0.
+Status: pending review.
+
 ## Rejected or superseded lessons
 Keep short notes here when an earlier lesson is no longer valid.

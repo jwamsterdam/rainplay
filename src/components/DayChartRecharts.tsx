@@ -4,6 +4,7 @@ import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
 import { buildSkyGradientStops } from "../lib/chart";
+import { nowFraction } from "../lib/nowMarker";
 import { ToggleButton } from "./ToggleButton";
 
 const RAIN_COLOR = "#78b4f8";
@@ -162,43 +163,23 @@ function VerticalTimeTick(props: { x?: number | string; y?: number | string; pay
   );
 }
 
-
-function minutesOf(time: string): number {
-  const [hh = "0", mm = "00"] = time.split(":");
-  return parseInt(hh, 10) * 60 + parseInt(mm, 10);
-}
-
-// Exact horizontal pixel position of the current wall-clock time within the
-// plot rect — interpolated BETWEEN the hourly band centres so the line sits at
-// the real time, not snapped to a grid line. Returns null when now is outside
-// the visible range (e.g. tomorrow's chart, or a +2h window already passed).
-function nowLineX(hours: HourlyWeather[], rect: PlotRect): number | null {
-  if (hours.length < 2) return null;
-  const nowMin = minutesOf(`${new Date().getHours()}:${new Date().getMinutes()}`);
-  const mins = hours.map((h) => minutesOf(h.time));
-  if (nowMin < mins[0] || nowMin > mins[mins.length - 1]) return null;
-
-  // Index i such that mins[i] <= now <= mins[i+1]; t is the fraction between.
-  let i = 0;
-  while (i < mins.length - 1 && mins[i + 1] <= nowMin) i++;
-  const span = mins[i + 1] - mins[i] || 1;
-  const t = (nowMin - mins[i]) / span;
-
-  // Each hour occupies one band; its centre is at (index + 0.5) * bandWidth.
-  const bandWidth = rect.width / hours.length;
-  return rect.x + (i + t + 0.5) * bandWidth;
-}
-
 // Dashed "now" marker drawn INSIDE the chart SVG via Recharts <Customized>, so it
 // paints in the same layer as the grid/series. (An absolutely-positioned HTML
 // overlay above the SVG was invisible on iOS Safari due to compositing.) The
 // categorical x-axis can only host a ReferenceLine on a whole hour, so we compute
 // the exact pixel x from the measured plot rect (same one that aligns the canvas).
+//
+// Position comes from the pure, clock-injected nowFraction() (see lib/nowMarker):
+// it returns a [0,1] fraction in the SAME band-centre model the gradient uses,
+// CLAMPED to the plot edges. So the marker still renders on the +2/+6 uur Vandaag
+// windows, which start at the first :00/:30 at/after now (now pins to the left
+// edge) — the old nowLineX returned null there and the marker vanished.
 function makeNowLineLayer(hours: HourlyWeather[], rect: PlotRect | null, isToday?: boolean) {
   return function NowLineLayer() {
     if (!isToday || !rect || rect.width <= 0 || rect.height <= 0) return null;
-    const x = nowLineX(hours, rect);
-    if (x == null) return null;
+    const fraction = nowFraction(hours, new Date());
+    if (fraction == null) return null;
+    const x = rect.x + fraction * rect.width;
     const top = rect.y;
     const bottom = rect.y + rect.height;
     return (
