@@ -43,16 +43,17 @@ button {
 }
 
 .app-shell {
-  /* position:fixed + inset:0 covers the exact visual viewport on iOS in BOTH a
-     Safari tab and an installed standalone PWA, across iOS versions — unlike
-     100vh/100svh/100dvh, which resolve inconsistently (e.g. they under-fill the
-     home-indicator band on some iOS releases, leaving content too high). The
-     layout is single-screen (overflow hidden), so a fixed shell has nothing to
-     scroll and stays stable. */
-  position: fixed;
-  inset: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
+  /* Fill the exact visual viewport. CSS vh units (100vh/svh/dvh) and
+     position:fixed both resolve inconsistently across iOS versions in a
+     standalone PWA (under-filling the home-indicator band on some, over- on
+     others). --app-height is set from window.innerHeight in JS (see
+     src/lib/appHeight.ts), which reports the real usable height reliably on
+     every iOS version; 100dvh is the pre-JS / non-JS fallback. */
+  min-height: 100dvh;
+  min-height: var(--app-height, 100dvh);
   overflow: hidden;
   /* Full-frame sky behind everything; the sheet floats as a centred card on top,
      so the background shows through beside it. Fallback colour blends the bottom. */
@@ -879,10 +880,8 @@ button {
   }
 
   .app-shell {
-    /* Back to an in-flow centred device frame on desktop (overrides the
-       position:fixed full-viewport shell used on mobile). */
-    position: static;
-    inset: auto;
+    /* Centred fixed-size device frame on desktop; the explicit height overrides
+       the mobile --app-height fill. */
     width: 430px;
     height: 932px;
     min-height: 932px;
