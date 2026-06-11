@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid } from "recharts";
+import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, Customized } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
@@ -189,17 +189,37 @@ function nowLineX(hours: HourlyWeather[], rect: PlotRect): number | null {
   return rect.x + (i + t + 0.5) * bandWidth;
 }
 
-// Dashed "now" marker drawn as an absolutely-positioned overlay (the categorical
-// x-axis can only place a ReferenceLine on a whole hour, so we position by pixel).
-function NowLine({ hours, rect, isToday }: { hours: HourlyWeather[]; rect: PlotRect | null; isToday?: boolean }) {
-  if (!isToday || !rect) return null;
-  const x = nowLineX(hours, rect);
-  if (x == null) return null;
-  return (
-    <div className="chart-now-line" style={{ left: x, top: rect.y, height: rect.height }}>
-      <span className="chart-now-label">nu</span>
-    </div>
-  );
+// Dashed "now" marker drawn INSIDE the chart SVG via Recharts <Customized>, so it
+// paints in the same layer as the grid/series. (An absolutely-positioned HTML
+// overlay above the SVG was invisible on iOS Safari due to compositing.) The
+// categorical x-axis can only host a ReferenceLine on a whole hour, so we compute
+// the exact pixel x from the measured plot rect (same one that aligns the canvas).
+function makeNowLineLayer(hours: HourlyWeather[], rect: PlotRect | null, isToday?: boolean) {
+  return function NowLineLayer() {
+    if (!isToday || !rect || rect.width <= 0 || rect.height <= 0) return null;
+    const x = nowLineX(hours, rect);
+    if (x == null) return null;
+    const top = rect.y;
+    const bottom = rect.y + rect.height;
+    return (
+      <g pointerEvents="none">
+        <line x1={x} y1={top} x2={x} y2={bottom} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" />
+        <text
+          x={x - 3}
+          y={top + 8}
+          textAnchor="end"
+          fill="#ff3b30"
+          fontSize={10}
+          fontWeight={700}
+          style={{ paintOrder: "stroke" }}
+          stroke="rgba(255, 255, 255, 0.85)"
+          strokeWidth={2.5}
+        >
+          nu
+        </text>
+      </g>
+    );
+  };
 }
 
 function tempDomain(hours: HourlyWeather[]): [number, number] {
@@ -371,8 +391,6 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
       <div ref={shellRef} className="chart-shell" style={{ height: 280 }}>
         {/* Sky gradient painted once on canvas, BEHIND the Recharts SVG. */}
         <SkyGradientCanvas hours={hours} colors={colors} rect={plotRect} />
-        {/* Dashed "now" marker, positioned at the exact current time. */}
-        <NowLine hours={hours} rect={plotRect} isToday={isToday} />
         {width > 0 && height > 0 && (
           <ComposedChart width={width} height={height} data={hours} margin={{ top: CHART_MARGIN_TOP, right: 0, bottom: CHART_MARGIN_BOTTOM, left: CHART_MARGIN_LEFT }} barCategoryGap="0%" style={{ position: "relative", zIndex: 1 }}>
             {/* Invisible probe Bar — measures the plot-area rectangle so the
@@ -460,6 +478,10 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
                 isAnimationActive={false}
               />
             )}
+
+            {/* Dashed "now" marker at the exact current time — drawn last so it
+                paints on top of the grid and series. */}
+            <Customized component={makeNowLineLayer(hours, plotRect, isToday)} />
           </ComposedChart>
         )}
       </div>
