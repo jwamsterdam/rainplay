@@ -153,7 +153,9 @@ describe("DayCarousel", () => {
   });
 
   afterEach(() => {
-    vi.runAllTimers();
+    act(() => {
+      vi.runAllTimers();
+    });
     vi.useRealTimers();
   });
 
