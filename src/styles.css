@@ -13,7 +13,7 @@
 html {
   height: 100%;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
   overflow: hidden;
   /* Paint the canvas white so the iOS home-indicator gap and Safari
      toolbar gap below the app-shell never show a system background colour */
@@ -25,7 +25,7 @@ body {
   min-width: 320px;
   height: 100%;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
   overflow: hidden;
   /* white so any sliver below the sheet (PWA safe-area / Safari toolbars) blends in */
   background: var(--color-surface-solid);
@@ -34,7 +34,7 @@ body {
 #root {
   height: 100%;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
 }
 
 button {
@@ -47,7 +47,7 @@ button {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
   overflow: hidden;
   /* Full-frame sky behind everything; the sheet floats as a centred card on top,
      so the background shows through beside it. Fallback colour blends the bottom. */
