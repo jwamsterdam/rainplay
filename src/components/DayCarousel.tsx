@@ -17,6 +17,7 @@ export type DayCarouselProps = {
   isLoading: boolean;
   isError: boolean;
   onScrollFractionChange?: (fraction: number) => void;
+  onRetry?: () => void;
 };
 
 export function DayCarousel({
@@ -30,6 +31,7 @@ export function DayCarousel({
   isLoading,
   isError,
   onScrollFractionChange,
+  onRetry,
 }: DayCarouselProps) {
   const [selectedDay, setSelectedDay] = useAtom(selectedDayAtom);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,7 +178,18 @@ export function DayCarousel({
         <div key={day} className="chart-carousel-panel">
           {isLoading || isError ? (
             <div className="loading-panel">
-              {isError ? "Weerdata niet beschikbaar" : "Weer laden"}
+              {isError ? (
+                <>
+                  <span>Weerdata niet beschikbaar</span>
+                  {onRetry ? (
+                    <button type="button" className="loading-retry" onClick={onRetry}>
+                      Opnieuw proberen
+                    </button>
+                  ) : null}
+                </>
+              ) : (
+                "Weer laden"
+              )}
             </div>
           ) : (
             <DayChartRecharts

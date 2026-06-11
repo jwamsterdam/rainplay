@@ -2,3 +2,4 @@
 - [User profile](user_profile.md) — owner of Rainplay, prefers Dutch UI copy, iPhone-first PWA, pragmatic over abstract
 - [Sky gradient via canvas](project_sky_gradient.md) — render chart sky gradient as one offscreen canvas, not stacked translucent SVG rects (seam fix)
 - [Carousel render cost](project_carousel_render.md) — 4 chart panels always mounted; memoize the heavy Recharts leaf before touching atoms or replacing Recharts
+- [iOS viewport fill](project_ios_viewport_fill.md) — dvh/svh/lvh unreliable for PWA standalone full-fill across iOS versions; use position:fixed+inset:0 and reset the desktop frame

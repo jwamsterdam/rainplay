@@ -287,6 +287,27 @@ describe("DayCarousel", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Test 6b: error state — retry button calls onRetry (recovery affordance)
+  // -------------------------------------------------------------------------
+  it("renders a retry button in the error state that calls onRetry when clicked", () => {
+    const onRetry = vi.fn();
+    renderCarousel({ isError: true, onRetry });
+
+    const buttons = screen.getAllByRole("button", { name: "Opnieuw proberen" });
+    expect(buttons).toHaveLength(4);
+
+    act(() => {
+      buttons[0].click();
+    });
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders no retry button when isError is true but onRetry is not provided", () => {
+    renderCarousel({ isError: true });
+    expect(screen.queryByRole("button", { name: "Opnieuw proberen" })).toBeNull();
+  });
+
+  // -------------------------------------------------------------------------
   // Extra: happy path — chart stubs render (no loading panels)
   // -------------------------------------------------------------------------
   it("renders 4 chart panels (not loading-panels) when data is available", () => {

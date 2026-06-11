@@ -117,6 +117,7 @@ export function WeatherScreen() {
           isLoading={forecast.isLoading}
           isError={forecast.isError}
           onScrollFractionChange={handleScrollFraction}
+          onRetry={() => forecast.refetch()}
         />
 
         <div className="control-stack">

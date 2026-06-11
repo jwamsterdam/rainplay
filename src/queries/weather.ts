@@ -18,5 +18,11 @@ export function useForecastQuery(location: ForecastLocation) {
     refetchOnWindowFocus: true,
     // Herlaad na het herstellen van een internet-verbinding.
     refetchOnReconnect: true,
+
+    // Een afgekapte mobiele verbinding (timeout/abort) wordt automatisch nog
+    // 2x opnieuw geprobeerd met oplopende vertraging voordat de error-staat
+    // (met handmatige "Opnieuw proberen") verschijnt.
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 }

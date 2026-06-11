@@ -43,11 +43,16 @@ button {
 }
 
 .app-shell {
-  position: relative;
+  /* position:fixed + inset:0 covers the exact visual viewport on iOS in BOTH a
+     Safari tab and an installed standalone PWA, across iOS versions — unlike
+     100vh/100svh/100dvh, which resolve inconsistently (e.g. they under-fill the
+     home-indicator band on some iOS releases, leaving content too high). The
+     layout is single-screen (overflow hidden), so a fixed shell has nothing to
+     scroll and stays stable. */
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
   overflow: hidden;
   /* Full-frame sky behind everything; the sheet floats as a centred card on top,
      so the background shows through beside it. Fallback colour blends the bottom. */
@@ -530,12 +535,30 @@ button {
   min-height: clamp(200px, 27dvh, 238px);
   margin-top: 10px;
   place-items: center;
+  gap: 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
   background: var(--color-surface-solid);
   color: var(--color-ink-muted);
   font-size: 18px;
   font-weight: 560;
+  text-align: center;
+}
+
+.loading-retry {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--color-best);
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.loading-retry:active {
+  opacity: 0.85;
 }
 
 .chart {
@@ -856,6 +879,10 @@ button {
   }
 
   .app-shell {
+    /* Back to an in-flow centred device frame on desktop (overrides the
+       position:fixed full-viewport shell used on mobile). */
+    position: static;
+    inset: auto;
     width: 430px;
     height: 932px;
     min-height: 932px;

@@ -69,6 +69,11 @@ type OpenMeteoResponse = {
 
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 
+// Abort a stalled request after this long so the query rejects instead of
+// hanging forever in "loading". ~10s is generous for a mobile radio yet still
+// surfaces a real outage reasonably fast.
+const FETCH_TIMEOUT_MS = 10_000;
+
 export async function fetchOpenMeteoForecast(location: ForecastLocation): Promise<Forecast> {
   const params = new URLSearchParams({
     latitude: String(location.latitude),
@@ -114,7 +119,24 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
     timezone: "auto",
   });
 
-  const response = await fetch(`${FORECAST_URL}?${params.toString()}`);
+  // Bound the request: a plain fetch with no timeout can hang forever on a
+  // flaky/just-woken mobile radio (the promise never settles), which leaves the
+  // forecast query stuck in "loading" with no recovery. Abort after a timeout so
+  // it REJECTS and the query can reach an error state (and retry).
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${FORECAST_URL}?${params.toString()}`, { signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Open-Meteo request timed out");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new Error(`Open-Meteo request failed with status ${response.status}`);
