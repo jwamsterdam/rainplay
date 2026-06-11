@@ -28,11 +28,24 @@ export default defineConfig({
         // Cache alle Vite-gebouwde assets (JS, CSS, afbeeldingen).
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
 
-        // API-calls naar Open-Meteo: altijd netwerk, nooit cache.
+        // API-calls naar Open-Meteo: probeer het netwerk eerst, maar val terug
+        // op de laatst gecachte forecast als het netwerk traag is of faalt
+        // (Open-Meteo throttelt zware requests soms tot tientallen seconden).
+        // Voor een vakantie-weerapp is licht-verouderde data beter dan niets.
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.open-meteo\.com\//,
-            handler: "NetworkOnly",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "open-meteo-forecast",
+              // Val na 8s terug op cache (korter dan de app-fetch-timeout van 10s).
+              networkTimeoutSeconds: 8,
+              expiration: {
+                maxEntries: 8,           // ~enkele locaties
+                maxAgeSeconds: 60 * 60,  // max 1 uur oude data serveren
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
           },
         ],
       },

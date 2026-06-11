@@ -139,7 +139,11 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
   }
 
   if (!response.ok) {
-    throw new Error(`Open-Meteo request failed with status ${response.status}`);
+    // Attach the HTTP status so the query layer can decide NOT to retry 4xx
+    // (e.g. 429 rate-limit) — retrying a rate-limited request only adds load.
+    const error = new Error(`Open-Meteo request failed with status ${response.status}`) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
   const data = (await response.json()) as OpenMeteoResponse;

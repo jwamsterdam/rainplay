@@ -20,9 +20,14 @@ export function useForecastQuery(location: ForecastLocation) {
     refetchOnReconnect: true,
 
     // Een afgekapte mobiele verbinding (timeout/abort) wordt automatisch nog
-    // 2x opnieuw geprobeerd met oplopende vertraging voordat de error-staat
-    // (met handmatige "Opnieuw proberen") verschijnt.
-    retry: 2,
+    // 2x opnieuw geprobeerd met oplopende vertraging. Een 4xx (vooral 429
+    // rate-limit) wordt NIET opnieuw geprobeerd — dat zou een al-overbelaste
+    // API alleen verder hameren — en toont meteen de "Opnieuw proberen"-knop.
+    retry: (failureCount, error) => {
+      const status = (error as { status?: number }).status;
+      if (status !== undefined && status >= 400 && status < 500) return false;
+      return failureCount < 2;
+    },
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 }

@@ -226,6 +226,12 @@ describe("fetchOpenMeteoForecast — HTTP errors", () => {
     await expect(fetchOpenMeteoForecast(LOCATION)).rejects.toThrow(/429/);
   });
 
+  it("attaches the HTTP status to the thrown error so the query can skip retrying 4xx", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errorResponse(429)));
+
+    await expect(fetchOpenMeteoForecast(LOCATION)).rejects.toMatchObject({ status: 429 });
+  });
+
   it("propagates a network rejection (fetch itself rejecting)", async () => {
     vi.stubGlobal(
       "fetch",
