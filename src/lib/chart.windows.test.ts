@@ -97,6 +97,25 @@ describe("bestOutdoorWindow", () => {
     expect(bestOutdoorWindow(hours)?.endTime).toBe("11:00");
   });
 
+  it("selects the practicalPreferredWindows tier when cloud kind disqualifies bright tier", () => {
+    // kind="cloud" fails feelsBright → brightWindows=[]; practical hours (10:00 in [6,20)) → practicalPreferred wins
+    const hours = [
+      hour("10:00", { kind: "cloud", score: 8, radiation: 40 }),
+    ];
+
+    expect(bestOutdoorWindow(hours)?.startTime).toBe("10:00");
+  });
+
+  it("selects the preferredWindows tier for an evening hour outside the practical range", () => {
+    // hourOfDay=20 fails isPracticalOutdoorHour (< 20 required) → brightWindows=[] and practicalPreferred=[]
+    // but isDry and score is good → preferredWindows wins
+    const hours = [
+      hour("20:00", { isoTime: "2026-06-11T20:00", kind: "sun", score: 9, radiation: 200 }),
+    ];
+
+    expect(bestOutdoorWindow(hours)?.startTime).toBe("20:00");
+  });
+
   it("keeps non-time labels when a final week summary has no HH:MM label", () => {
     const hours = [
       hour("ma", { isoTime: "2026-06-11T12:00", time: "ma" }),

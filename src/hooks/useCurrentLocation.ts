@@ -69,7 +69,7 @@ export function useCurrentLocation() {
   useEffect(() => {
     if (requestedOnMount.current) return;
     requestedOnMount.current = true;
-    refreshLocation();
+    refreshLocation().catch(() => {});
   }, [refreshLocation]);
 
   return { refreshLocation };
