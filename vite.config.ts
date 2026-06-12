@@ -24,6 +24,9 @@ export default defineConfig({
         // Neem direct controle over alle open tabs/vensters na activatie.
         clientsClaim: true,
         skipWaiting: true,
+        // Verwijder precache-entries van oudere SW-versies bij activatie, zodat
+        // verouderde chunks niet in Cache Storage blijven slingeren.
+        cleanupOutdatedCaches: true,
 
         // Cache alle Vite-gebouwde assets (JS, CSS, afbeeldingen).
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
