@@ -18,7 +18,7 @@ export default defineConfig({
       // "autoUpdate": nieuw SW doet skipWaiting() zodra hij geïnstalleerd is.
       // Bij de volgende app-start claimt hij alle clients → gebruiker merkt niets.
       registerType: "autoUpdate",
-      injectRegister: "auto",
+      injectRegister: null,
 
       workbox: {
         // Neem direct controle over alle open tabs/vensters na activatie.
