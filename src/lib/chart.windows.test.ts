@@ -9,6 +9,7 @@ import {
   outdoorSummaryLabel,
   parseRgba,
 } from "./chart";
+import type { OutdoorWindow } from "./chart";
 import type { CellColors } from "../components/cellColors";
 import type { HourlyWeather, WeatherKind } from "../types";
 
@@ -126,6 +127,29 @@ describe("outdoorSummaryLabel", () => {
     const best = bestOutdoorWindow(hours);
 
     expect(outdoorSummaryLabel(hours, best)).toBe("Ochtend beste - later regen");
+  });
+
+  it("describes a clear afternoon after morning rain with no following rain", () => {
+    const hours = [
+      hour("06:00", { kind: "rain", precipitationMm: 0.4 }),
+      hour("14:00", { score: 9, kind: "sun" }),
+    ];
+    const best = bestOutdoorWindow(hours);
+
+    expect(outdoorSummaryLabel(hours, best)).toBe("Na regen - middag beste");
+  });
+
+  it("describes a fully clear period with no rain before or after", () => {
+    const hours = [hour("09:00", { score: 9, kind: "sun" })];
+    const best = bestOutdoorWindow(hours);
+
+    expect(outdoorSummaryLabel(hours, best)).toBe("Ochtend beste buitenmoment");
+  });
+
+  it("uses 'avond' period label for windows starting at 18:00 or later", () => {
+    const eveningWindow: OutdoorWindow = { startIndex: 0, endIndex: 0, startTime: "19:00", endTime: "20:00" };
+
+    expect(outdoorSummaryLabel([], eveningWindow)).toBe("Avond beste buitenmoment");
   });
 });
 

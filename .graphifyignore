@@ -1,0 +1,9 @@
+*.md
+*.mdx
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+docs/

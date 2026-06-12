@@ -137,6 +137,32 @@ describe("visiblePointsForTodayHorizon", () => {
   });
 });
 
+describe("summarizeDay kind selection", () => {
+  function makeKindDay(date: string, kindFor: (h: number) => HourlyWeather["kind"]): HourlyWeather[] {
+    return Array.from({ length: 24 }, (_, i) =>
+      hour(`${date}T${String(i).padStart(2, "0")}:00`, {
+        kind: kindFor(i),
+        isDay: i >= 6 && i <= 21,
+      }),
+    );
+  }
+
+  it("yields 'cloud' for a day with no sun, partly, or meaningful rain", () => {
+    const cloudHours = makeKindDay("2026-06-11", () => "cloud");
+    const [summary] = visibleHoursForSelection(cloudHours, "Week", "Hele dag");
+
+    expect(summary.kind).toBe("cloud");
+  });
+
+  it("yields 'partly' when partly-hours outnumber sunny hours", () => {
+    // Hour 10 is the only sunny hour; all other daytime hours are partly.
+    const mixedHours = makeKindDay("2026-06-11", (h) => (h === 10 ? "sun" : "partly"));
+    const [summary] = visibleHoursForSelection(mixedHours, "Week", "Hele dag");
+
+    expect(summary.kind).toBe("partly");
+  });
+});
+
 describe("headerDateLabel", () => {
   it("formats Dutch labels for individual days and week ranges", () => {
     expect(headerDateLabel(hours, "Vandaag")).toContain("do");

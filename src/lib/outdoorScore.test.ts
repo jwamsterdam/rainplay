@@ -37,6 +37,7 @@ describe("outdoorScore", () => {
     expect(score({ temperatureC: 12 })).toBe(9);
     expect(score({ temperatureC: 8 })).toBe(8);
     expect(score({ temperatureC: 4 })).toBe(7);
+    expect(score({ temperatureC: 0 })).toBe(6);  // below 4°C: penalty = 4
     expect(score({ temperatureC: 28 })).toBe(9);
     expect(score({ temperatureC: 35 })).toBe(6);
   });
