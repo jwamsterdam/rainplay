@@ -11,11 +11,12 @@ export function visiblePointsForTodayHorizon(
   hourly: HourlyWeather[],
   minutely15: ForecastPoint[],
   horizon: HorizonOption,
+  now = new Date(),
 ) {
   if (horizon === "Hele dag") return visibleHoursForHorizon(hoursForDay(hourly, "Vandaag"), horizon);
   if (minutely15.length === 0) return visibleHoursForHorizon(hoursForDay(hourly, "Vandaag"), horizon);
 
-  const start = niceStartIndex(minutely15);
+  const start = niceStartIndex(minutely15, now);
 
   if (horizon === "+2 uur") return minutely15.slice(start, start + 8);
 
@@ -23,14 +24,23 @@ export function visiblePointsForTodayHorizon(
   return minutely15.slice(start, start + 24).filter((_, i) => i % 2 === 0);
 }
 
-function niceStartIndex(points: ForecastPoint[]): number {
-  // Return the FIRST :00/:30 point in the data — i.e. the first whole/half hour
-  // at or after now (the minutely15 series begins at the current quarter-hour).
-  // This is the window's left edge; it is at/after now, so the "nu" marker pins
-  // to the left of +2/+6 uur windows (see lib/nowMarker). Fall back to index 0
-  // if no :00/:30 point exists.
-  const idx = points.findIndex(p => p.time.endsWith(":00") || p.time.endsWith(":30"));
-  return idx === -1 ? 0 : idx;
+function niceStartIndex(points: ForecastPoint[], now = new Date()): number {
+  // Find the LAST :00/:30 point at or before now so the window always starts
+  // in the recent past and the nu-line lands inside the chart rather than
+  // pinning to the left edge. Points are time-ordered so we scan forward and
+  // keep the highest match. Fall back to index 0 (current quarter-hour) when
+  // no :00/:30 falls at or before now — e.g. data starts in a :15/:45 period.
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  let last = -1;
+  for (let i = 0; i < points.length; i++) {
+    const t = points[i].time;
+    if (!t.endsWith(":00") && !t.endsWith(":30")) continue;
+    const [hh = "0", mm = "0"] = t.split(":");
+    const min = parseInt(hh, 10) * 60 + parseInt(mm, 10);
+    if (min > nowMin) break;
+    last = i;
+  }
+  return last !== -1 ? last : 0;
 }
 
 export function visibleHoursForSelection(

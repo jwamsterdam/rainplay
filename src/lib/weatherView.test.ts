@@ -96,7 +96,9 @@ describe("visiblePointsForTodayHorizon", () => {
     expect(selected).toHaveLength(12);
   });
 
-  it("starts minutely horizons at the first half-hour or whole-hour point", () => {
+  it("starts minutely horizons at the last :00/:30 at or before now", () => {
+    // now=10:35 → last :00/:30 in data at or before 10:35 is 10:30 (index 1).
+    const now = new Date(2026, 5, 11, 10, 35);
     const minutely: ForecastPoint[] = [
       hour("2026-06-11T10:15"),
       hour("2026-06-11T10:30"),
@@ -109,7 +111,7 @@ describe("visiblePointsForTodayHorizon", () => {
       hour("2026-06-11T12:15"),
     ];
 
-    expect(visiblePointsForTodayHorizon(hours, minutely, "+2 uur").map((point) => point.time)).toEqual([
+    expect(visiblePointsForTodayHorizon(hours, minutely, "+2 uur", now).map((point) => point.time)).toEqual([
       "10:30",
       "10:45",
       "11:00",
@@ -119,7 +121,7 @@ describe("visiblePointsForTodayHorizon", () => {
       "12:00",
       "12:15",
     ]);
-    expect(visiblePointsForTodayHorizon(hours, minutely, "+6 uur").map((point) => point.time)).toEqual([
+    expect(visiblePointsForTodayHorizon(hours, minutely, "+6 uur", now).map((point) => point.time)).toEqual([
       "10:30",
       "11:00",
       "11:30",

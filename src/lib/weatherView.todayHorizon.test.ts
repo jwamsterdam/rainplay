@@ -76,7 +76,8 @@ describe("visiblePointsForTodayHorizon", () => {
     it.each(TODAY_HORIZONS)(
       "horizon %s yields >= 2 points so nowFraction returns a non-null number",
       (horizon) => {
-        const points = visiblePointsForTodayHorizon(HOURLY, MINUTELY15, horizon);
+        // Pass NOW so this test is deterministic regardless of wall-clock time.
+        const points = visiblePointsForTodayHorizon(HOURLY, MINUTELY15, horizon, NOW);
         expect(points.length).toBeGreaterThanOrEqual(2);
 
         const f = nowFraction(points, NOW);
@@ -88,39 +89,42 @@ describe("visiblePointsForTodayHorizon", () => {
   });
 
   // -------------------------------------------------------------------------
-  // The minutely windows start AT/AFTER now (the property that made the old
-  // nowLineX return null). With nowFraction this means a left-pinned marker.
+  // The minutely windows now start AT OR BEFORE now so the nu-line always
+  // falls inside the visible chart rather than pinning to the left edge.
   // -------------------------------------------------------------------------
-  describe("the minutely windows (+2 / +6) start at/after now", () => {
-    it("'+2 uur' window starts at the first :00/:30 at-or-after now and is left-pinned", () => {
-      const points = visiblePointsForTodayHorizon(HOURLY, MINUTELY15, "+2 uur");
-      // now=10:46 → first :00/:30 at/after now is 11:00.
-      expect(points[0].time).toBe("11:00");
-      expect(minutesOf(points[0].time)).toBeGreaterThanOrEqual(
+  describe("the minutely windows (+2 / +6) start at or before now", () => {
+    it("'+2 uur' window starts at the last :00/:30 at-or-before now and nu-line is inside", () => {
+      const points = visiblePointsForTodayHorizon(HOURLY, MINUTELY15, "+2 uur", NOW);
+      // now=10:46 — MINUTELY15 starts at 10:45 (:45, not :00/:30); no :00/:30
+      // exists at or before 10:46 in the data, so niceStartIndex falls back to
+      // index 0 (current quarter-hour 10:45).
+      expect(points[0].time).toBe("10:45");
+      expect(minutesOf(points[0].time)).toBeLessThanOrEqual(
         NOW.getHours() * 60 + NOW.getMinutes(),
       );
       // exactly 8 fifteen-min points
       expect(points).toHaveLength(8);
-      // now precedes the window → marker pins to the left edge (fraction 0).
-      expect(nowFraction(points, NOW)).toBe(0);
+      // now=10:46 is 1 min after 10:45 → inside the window → fraction > 0.
+      const f = nowFraction(points, NOW);
+      expect(f).not.toBeNull();
+      expect(f!).toBeGreaterThan(0);
+      expect(f!).toBeLessThan(0.2);
     });
 
-    it("'+6 uur' window starts at the first :00/:30 at-or-after now, stepping 30 min", () => {
-      const points = visiblePointsForTodayHorizon(HOURLY, MINUTELY15, "+6 uur");
-      expect(points[0].time).toBe("11:00");
-      expect(minutesOf(points[0].time)).toBeGreaterThanOrEqual(
+    it("'+6 uur' window starts at or before now, stepping every 30 min", () => {
+      const points = visiblePointsForTodayHorizon(HOURLY, MINUTELY15, "+6 uur", NOW);
+      expect(points[0].time).toBe("10:45");
+      expect(minutesOf(points[0].time)).toBeLessThanOrEqual(
         NOW.getHours() * 60 + NOW.getMinutes(),
       );
       expect(points.length).toBeGreaterThanOrEqual(2);
-      // every-other 15-min point → 30-min cadence (11:00, 11:30, ...).
-      expect(points[1].time).toBe("11:30");
-      // now=10:46 is only 14 min before the 11:00 band CENTRE within a 30-min
-      // band, so the band-centre +0.5 offset keeps the fraction just inside the
-      // left edge rather than hard-clamping to 0. The contract that matters for
-      // the bug is: a non-null fraction near the left edge → the marker renders.
+      // every-other 15-min point → 30-min cadence (10:45, 11:15, ...).
+      expect(points[1].time).toBe("11:15");
+      // now=10:46 is inside the first band → fraction > 0 (not clamped to 0).
       const f = nowFraction(points, NOW);
       expect(f).not.toBeNull();
-      expect(f! >= 0 && f! < 0.1).toBe(true);
+      expect(f!).toBeGreaterThan(0);
+      expect(f!).toBeLessThan(0.15);
     });
   });
 
@@ -132,7 +136,7 @@ describe("visiblePointsForTodayHorizon", () => {
     it.each(["+2 uur", "+6 uur"] as HorizonOption[])(
       "horizon %s falls back to hourly points (>= 2) so the marker still renders",
       (horizon) => {
-        const points = visiblePointsForTodayHorizon(HOURLY, [], horizon);
+        const points = visiblePointsForTodayHorizon(HOURLY, [], horizon, NOW);
         expect(points.length).toBeGreaterThanOrEqual(2);
         expect(nowFraction(points, NOW)).not.toBeNull();
       },
@@ -144,7 +148,7 @@ describe("visiblePointsForTodayHorizon", () => {
   // -------------------------------------------------------------------------
   describe("'Hele dag' interior marker", () => {
     it("yields a hourly day set and an interior (non-clamped) fraction for a midday now", () => {
-      const points = visiblePointsForTodayHorizon(HOURLY, MINUTELY15, "Hele dag");
+      const points = visiblePointsForTodayHorizon(HOURLY, MINUTELY15, "Hele dag", NOW);
       expect(points.length).toBeGreaterThanOrEqual(2);
       // 10:46 sits inside the day window → interior fraction strictly in (0,1).
       const f = nowFraction(points, NOW);
