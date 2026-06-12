@@ -4,3 +4,4 @@ coverage/
 .DS_Store
 *.local
 docs/screenshots/app-preview.png
+graphify-out/

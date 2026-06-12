@@ -5,3 +5,4 @@
 - [RAF loop testing pattern](feedback_raf_testing.md) — Perpetual RAF loops break vi.runAllTimers(); use manual spy + flushRaf() pattern instead
 - [Fetch timeout contract](feedback_fetch_timeout_contract.md) — Testing the "no-timeout fetch hangs → query stuck pending" bug class with abort-aware hanging fetch + it.fails
 - [Band-centre clamp math](feedback_band_centre_clamp.md) — Chart position uses (i+0.5)/n; clamp boundary is half a band, not the point — don't over-assert exact 0/1
+- [Geocoding test pattern](feedback_geocoding_test_pattern.md) — searchLocations: stub fetch globally, check trim short-circuit, signal forwarding, optional country field, rounded coordinates
