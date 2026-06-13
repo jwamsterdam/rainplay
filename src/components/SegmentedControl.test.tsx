@@ -47,8 +47,11 @@ function renderControl(overrides: RenderOptions = {}) {
   const utils = render(
     <SegmentedControl
       label="Test selector"
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       options={options as readonly string[] as any}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       value={value as any}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onChange={onChange as any}
       {...rest}
     />,
@@ -67,6 +70,7 @@ function IndicatorTestWrapper({
   onRef: (ref: React.RefObject<number>) => void;
 }) {
   const ref = useRef<number>(0);
+  // eslint-disable-next-line react-hooks/refs
   onRef(ref);
   return (
     <SegmentedControl
@@ -215,6 +219,7 @@ describe("SegmentedControl — with scrollFractionRef (day-selector mode)", () =
 describe("SegmentedControl — displayLabels", () => {
   it("renders the custom display label in button text", () => {
     renderControl({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       displayLabels: { Overmorgen: "Overm." } as any,
     });
     // The visible text is the custom label
@@ -223,6 +228,7 @@ describe("SegmentedControl — displayLabels", () => {
 
   it("uses the raw option value as aria-label, not the display label", () => {
     renderControl({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       displayLabels: { Overmorgen: "Overm." } as any,
     });
     // aria-label must still be "Overmorgen" for screen-reader correctness

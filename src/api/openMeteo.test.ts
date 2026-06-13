@@ -111,6 +111,7 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 describe("fetchOpenMeteoForecast — success & normalization", () => {
   it("requests the location's coordinates from the Open-Meteo forecast endpoint", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
       okResponse(makePayload()),
     );

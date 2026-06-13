@@ -42,6 +42,7 @@ export function DayCarousel({
   // would force). Lets us skip the atom write when a swipe settles on the
   // already-selected day.
   const selectedDayRef = useRef(selectedDay);
+  // eslint-disable-next-line react-hooks/refs
   selectedDayRef.current = selectedDay;
 
   const hoursVandaag = useMemo(

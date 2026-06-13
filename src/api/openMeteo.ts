@@ -131,6 +131,9 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
     response = await fetch(`${FORECAST_URL}?${params.toString()}`, { signal: controller.signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
+      // AbortError is intentionally re-framed as a timeout; ES2020 target
+      // does not support Error({ cause }), so we suppress the lint rule here.
+      // eslint-disable-next-line preserve-caught-error
       throw new Error("Open-Meteo request timed out");
     }
     throw error;

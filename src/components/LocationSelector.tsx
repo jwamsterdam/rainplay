@@ -34,6 +34,7 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
   useEffect(() => {
     const search = query.trim();
     if (search.length < MIN_QUERY_LENGTH) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
       setIsSearching(false);
       setSearchError(null);
@@ -49,7 +50,7 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
         const results = await searchLocations(search, controller.signal);
         setSuggestions(results);
         setSearchError(results.length === 0 ? "Geen plaatsen gevonden." : null);
-      } catch (error) {
+      } catch {
         if (controller.signal.aborted) return;
         setSearchError("Zoeken lukte niet.");
         setSuggestions([]);
