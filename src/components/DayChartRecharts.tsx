@@ -1,10 +1,11 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, Customized } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
 import { buildSkyGradientStops } from "../lib/chart";
 import { nowFraction } from "../lib/nowMarker";
+import { useElementSize } from "../hooks/useElementSize";
 
 const RAIN_COLOR = "#78b4f8";
 const TEMP_COLOR = "#f97316";
@@ -340,27 +341,6 @@ function SkyGradientCanvas({ hours, colors, rect }: { hours: HourlyWeather[]; co
       style={{ position: "absolute", left: rect.x, top: rect.y, pointerEvents: "none" }}
     />
   );
-}
-
-// Measure the chart shell ourselves and feed ComposedChart explicit pixel sizes.
-// Avoids ResponsiveContainer's mount-time measurement race (the "width(-1)" warning
-// and occasional collapsed-width render under StrictMode's double render).
-function useElementSize<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      setSize({ width: Math.round(width), height: Math.round(height) });
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return [ref, size] as const;
 }
 
 // --- Main component ---
