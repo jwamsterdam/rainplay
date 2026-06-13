@@ -48,25 +48,37 @@ button {
 
 .app-shell {
   position: relative;
+  z-index: 0; /* stacking context so ::before sits behind the content */
   display: flex;
   flex-direction: column;
-  /* Fill the DYNAMIC visible viewport (dvh). On-device diagnostics on an
-     iPhone 15 showed the real usable height = innerHeight = dvh = svh = 793,
-     while lvh = 852 = the full physical screen INCLUDING browser chrome. Using
-     lvh over-filled by ~59px, pushing the bottom of the sheet (the Open-Meteo
-     attribution) below the visible area where it was clipped by the Safari
-     toolbar. dvh tracks the actually-visible area: in a true standalone PWA it
-     equals the full screen, in a Safari tab it tracks the area above the
-     toolbar. 100vh is the legacy fallback. */
+  /* The shell BOUNDS THE CONTENT to the stable small viewport (svh = 793 on
+     iPhone 15). svh never grows after first paint, so the sheet/attribution stay
+     in the safe area and never get clipped. The physical-screen BACKGROUND is a
+     separate ::before layer (see below) — these are two different correct heights
+     (content wants 793, background wants the full 852), so they live on two
+     layers. 100vh is the legacy fallback. */
   min-height: 100vh;
   min-height: 100svh;
   overflow: hidden;
-  /* Full-frame sky behind everything; the sheet floats as a centred card on top,
-     so the background shows through beside it. Fallback colour blends the bottom. */
+}
+
+.app-shell::before {
+  /* Full-physical-screen sky behind everything, on its own fixed layer. lvh is
+     the ONLY unit that is both full-physical AND stable: at first paint iOS
+     reports innerHeight/dvh/lvh = 852 but svh = 793, and at rest only lvh stays
+     852. Filling here (no content to clip) reaches the home-indicator band with
+     no bottom gap, while the svh-bounded content above stays unclipped. */
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  height: 100vh; /* fallback */
+  height: 100lvh;
   background: var(--color-surface-solid) url("/assets/weather-hero.png");
   background-position: center top;
   background-size: cover;
   background-repeat: no-repeat;
+  pointer-events: none;
 }
 
 .weather-hero {
@@ -391,9 +403,9 @@ button {
   width: min(100%, 500px);
   margin: -20px auto 0;
   /* About half the home-indicator inset: the attribution sits lower (less white
-     space beneath it) while still clearing the indicator. The sheet's white
-     background still fills the rounded corners below, since the app-shell fills
-     to the physical bottom. */
+     space beneath it) while still clearing the indicator. The physical bottom
+     (home-indicator band) is filled by the .app-shell::before sky layer, so any
+     area below the sheet shows sky, not a bare gap. */
   padding: 14px 10px max(10px, calc(env(safe-area-inset-bottom) - var(--sheet-safe-trim)));
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   /* Solid white (not the translucent surface) so the sheet's colour matches the
@@ -917,6 +929,14 @@ button {
     border: 1px solid rgba(203, 213, 225, 0.78);
     border-radius: 34px;
     box-shadow: var(--shadow-device);
+  }
+
+  .app-shell::before {
+    /* Re-anchor the sky to the device frame; otherwise position:fixed 100lvh
+       would paint across the whole desktop window. */
+    position: absolute;
+    height: 100%;
+    border-radius: 34px;
   }
 
   .weather-hero {
