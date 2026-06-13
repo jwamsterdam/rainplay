@@ -92,18 +92,6 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
         <span className="chevron" aria-hidden="true" />
       </button>
 
-      {selectedLocation.source !== "default" ? (
-        <button
-          aria-label="GPS locatie gebruiken"
-          className="location-gps-button"
-          disabled={locationStatus === "locating"}
-          onClick={onUseCurrentLocation}
-          type="button"
-        >
-          <LocationArrow className="location-gps-button-icon" />
-        </button>
-      ) : null}
-
       {isOpen ? (
         <div className="location-menu" role="menu">
           <button
