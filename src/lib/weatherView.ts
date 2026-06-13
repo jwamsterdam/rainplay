@@ -30,14 +30,15 @@ function niceStartIndex(points: ForecastPoint[], now = new Date()): number {
   // pinning to the left edge. Points are time-ordered so we scan forward and
   // keep the highest match. Fall back to index 0 (current quarter-hour) when
   // no :00/:30 falls at or before now — e.g. data starts in a :15/:45 period.
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  //
+  // Uses isoTime (includes date) for comparison so cross-midnight data
+  // (e.g. 23:45 → 00:00 next day) doesn't confuse the :00/:30 minute check.
+  const nowMs = now.getTime();
   let last = -1;
   for (let i = 0; i < points.length; i++) {
     const t = points[i].time;
     if (!t.endsWith(":00") && !t.endsWith(":30")) continue;
-    const [hh = "0", mm = "0"] = t.split(":");
-    const min = parseInt(hh, 10) * 60 + parseInt(mm, 10);
-    if (min > nowMin) break;
+    if (new Date(points[i].isoTime).getTime() > nowMs) break;
     last = i;
   }
   return last !== -1 ? last : 0;
