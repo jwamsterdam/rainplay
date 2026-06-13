@@ -189,6 +189,10 @@ Keep dependencies light. For the chart, prefer a custom SVG/CSS implementation f
 - `src/design/tokens.css` contains design tokens for color, radius, spacing, shadows, and typography.
 - `src/screens/WeatherScreen.tsx` owns the first product screen.
 
+### iOS screen fill (read before touching layout/viewport CSS)
+
+The app fills the iPhone screen by pinning `.app-shell` with `position: fixed; inset: 0` and painting the sky as a separate fixed background — **never** with a `vh/svh/dvh/lvh`/`%` height, because none of those is reliable on an iOS 26 standalone PWA at cold launch. This is subtle and cost many regressions; the full rationale, the exact CSS, every failed approach, and the on-device diagnostics are documented in [`docs/architecture/ios-viewport-fill.md`](docs/architecture/ios-viewport-fill.md). Do not change the viewport strategy without reading it and reproducing on a real iPhone (desktop Chrome cannot reproduce the bug).
+
 ## Attribution
 
 Open-Meteo uses open data and requires attribution. Include a small, unobtrusive attribution somewhere appropriate:
