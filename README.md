@@ -21,8 +21,14 @@ npm run build
 # Preview de productiebuild lokaal
 npm run preview
 
+# Controleer code op stijlfouten
+npm run lint
+
 # Draai alle tests (eenmalig)
 npm test
+
+# Draai één testbestand (eenmalig)
+npm run test:unit
 
 # Draai tests in watch-modus
 npm run test:watch
@@ -33,7 +39,7 @@ npm run test:coverage
 # Typecheck zonder bouwen
 npm run typecheck
 
-# Volledige validatie: tests + typecheck + build
+# Volledige validatie: lint + tests + typecheck + build
 npm run validate
 ```
 
