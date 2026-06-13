@@ -6,6 +6,41 @@ Rainplay is a simple iPhone-first vacation weather web app. It is not meant to b
 
 The app combines the emotional feel of a weather app with the usefulness of a decision tool. The first screen should feel like looking outside: sky, sun, clouds, temperature, and a clear recommendation. Under that, a simple timeline shows rain amount, sky brightness, and an outdoor score.
 
+## Commando's
+
+```bash
+# Installeer dependencies
+npm install
+
+# Start de ontwikkelserver (http://localhost:5173)
+npm run dev
+
+# Bouw voor productie (voert eerst tests + typecheck uit)
+npm run build
+
+# Preview de productiebuild lokaal
+npm run preview
+
+# Draai alle tests (eenmalig)
+npm test
+
+# Draai tests in watch-modus
+npm run test:watch
+
+# Draai tests met coverage rapport
+npm run test:coverage
+
+# Typecheck zonder bouwen
+npm run typecheck
+
+# Volledige validatie: tests + typecheck + build
+npm run validate
+```
+
+Het HTML-coverage rapport staat na `npm run test:coverage` in `coverage/index.html`.
+
+Coverage drempelwaardes: 80% statements/lines, 75% functions, 70% branches.
+
 ## Current Direction
 
 Build Rainplay as a **React + TypeScript Progressive Web App**.
