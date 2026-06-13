@@ -23,14 +23,13 @@ html {
      correctly from the containing block at first paint. html OWNS the top + side
      safe-area insets and CARRIES the sky; the bottom inset is owned by .decision-sheet. */
   height: 100%;
-  /* min-height: 100% (NOT 100% + safe-area-inset-top). With border-box, the
-     padding-top below shrinks the content box to the usable area so the sheet
-     bottom lands exactly on the physical bottom. Adding the top inset here would
-     over-extend the content by ~59px, pushing the attribution off the bottom
-     edge. No bottom white bar results because the fixed sky fills the whole
-     screen behind the content regardless of content height. */
-  min-height: 100%;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  min-height: calc(100% + env(safe-area-inset-top)); /* keeps html tall enough that the fixed sky fills the screen — no bottom white bar */
+  /* padding-bottom = safe-area-inset-top CANCELS the overshoot: min-height adds
+     one top-inset of height, which otherwise pushes the content (and the
+     attribution) ~59px past the physical bottom (cut off on iPhone 15). Trimming
+     the content box by the same amount pulls the bottom back up to the physical
+     edge, WITHOUT changing html's height — so the sky fill is untouched. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-top) env(safe-area-inset-left);
   overflow: hidden;
   background: var(--color-surface-solid) url("/assets/weather-hero.png");
   background-position: center top;
