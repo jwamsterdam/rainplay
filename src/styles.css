@@ -15,30 +15,36 @@
 }
 
 html {
+  /* iOS 26 standalone PWA: NO viewport unit (svh/dvh/lvh/innerHeight/visualViewport)
+     is reliable at cold launch — on-device capture showed all of them read the full
+     physical height at first paint and only settle later via an untriggerable geometry
+     event. So the outer fill uses the canonical PERCENTAGE + safe-area recipe (the
+     documented companion to black-translucent + viewport-fit=cover). `%` resolves
+     correctly from the containing block at first paint. html OWNS the top + side
+     safe-area insets and CARRIES the sky; the bottom inset is owned by .decision-sheet. */
   height: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
+  min-height: calc(100% + env(safe-area-inset-top)); /* prevents the bottom white bar */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   overflow: hidden;
-  /* Paint the canvas white so the iOS home-indicator gap and Safari
-     toolbar gap below the app-shell never show a system background colour */
-  background: #ffffff;
+  background: var(--color-surface-solid) url("/assets/weather-hero.png");
+  background-position: center top;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   height: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
   overflow: hidden;
-  /* white so any sliver below the sheet (PWA safe-area / Safari toolbars) blends in */
-  background: var(--color-surface-solid);
+  /* Transparent so the fixed sky on <html> shows through; an opaque colour here
+     would paint OVER the sky (html is the parent, body paints on top). */
+  background: transparent;
 }
 
 #root {
   height: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
 }
 
 button {
@@ -47,38 +53,14 @@ button {
 }
 
 .app-shell {
+  /* Fills html's content box (height:100%). The sky now lives on `html` (a fixed
+     background), so the shell is transparent and just lays out hero + sheet. */
   position: relative;
-  z-index: 0; /* stacking context so ::before sits behind the content */
   display: flex;
   flex-direction: column;
-  /* The shell BOUNDS THE CONTENT to the stable small viewport (svh = 793 on
-     iPhone 15). svh never grows after first paint, so the sheet/attribution stay
-     in the safe area and never get clipped. The physical-screen BACKGROUND is a
-     separate ::before layer (see below) — these are two different correct heights
-     (content wants 793, background wants the full 852), so they live on two
-     layers. 100vh is the legacy fallback. */
-  min-height: 100vh;
-  min-height: 100svh;
+  height: 100%;
   overflow: hidden;
-}
-
-.app-shell::before {
-  /* Full-physical-screen sky behind everything, on its own fixed layer. lvh is
-     the ONLY unit that is both full-physical AND stable: at first paint iOS
-     reports innerHeight/dvh/lvh = 852 but svh = 793, and at rest only lvh stays
-     852. Filling here (no content to clip) reaches the home-indicator band with
-     no bottom gap, while the svh-bounded content above stays unclipped. */
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  height: 100vh; /* fallback */
-  height: 100lvh;
-  background: var(--color-surface-solid) url("/assets/weather-hero.png");
-  background-position: center top;
-  background-size: cover;
-  background-repeat: no-repeat;
-  pointer-events: none;
+  background: transparent;
 }
 
 .weather-hero {
@@ -87,7 +69,8 @@ button {
   /* Lower floor so the decision sheet (incl. the Open-Meteo attribution) always
      fits within the viewport on iPhone and is not clipped by app-shell overflow. */
   min-height: clamp(200px, 40dvh, 460px);
-  padding: max(12px, env(safe-area-inset-top)) var(--space-5) clamp(18px, 3dvh, 44px);
+  /* html now owns the top safe-area inset; keeping it here too would double-pad. */
+  padding: 12px var(--space-5) clamp(18px, 3dvh, 44px);
   overflow: hidden;
 }
 
@@ -403,9 +386,9 @@ button {
   width: min(100%, 500px);
   margin: -20px auto 0;
   /* About half the home-indicator inset: the attribution sits lower (less white
-     space beneath it) while still clearing the indicator. The physical bottom
-     (home-indicator band) is filled by the .app-shell::before sky layer, so any
-     area below the sheet shows sky, not a bare gap. */
+     space beneath it) while still clearing the indicator. The sky is now a fixed
+     background on `html` (html owns the top + side insets; this sheet owns the
+     bottom inset), so any area below the sheet shows sky, not a bare gap. */
   padding: 14px 10px max(10px, calc(env(safe-area-inset-bottom) - var(--sheet-safe-trim)));
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   /* Solid white (not the translucent surface) so the sheet's colour matches the
@@ -648,7 +631,8 @@ button {
 
 .settings-gear-button {
   position: absolute;
-  top: max(14px, env(safe-area-inset-top));
+  /* html owns the top safe-area inset, so this is measured from the padded edge. */
+  top: 14px;
   right: 16px;
   z-index: 4;
   display: flex;
@@ -909,6 +893,15 @@ button {
 }
 
 @media (min-width: 720px) {
+  /* Desktop: neutralise the mobile %+safe-area html recipe (no insets, no fixed
+     sky) and move the sky onto the device-frame .app-shell instead, so it stays
+     inside the rounded mockup rather than painting across the whole window. */
+  html {
+    min-height: 100%;
+    padding: 0;
+    background: none;
+  }
+
   body {
     display: grid;
     place-items: start center;
@@ -919,8 +912,8 @@ button {
 
   .app-shell {
     /* Centred fixed-size device frame on desktop; these explicit height/min-height
-       values override the mobile 100vh/100svh fill (same specificity, later in
-       source order). */
+       values override the mobile height:100% fill (same specificity, later in
+       source order). The sky lives here on desktop (inside the frame). */
     width: 430px;
     height: 932px;
     min-height: 932px;
@@ -929,14 +922,7 @@ button {
     border: 1px solid rgba(203, 213, 225, 0.78);
     border-radius: 34px;
     box-shadow: var(--shadow-device);
-  }
-
-  .app-shell::before {
-    /* Re-anchor the sky to the device frame; otherwise position:fixed 100lvh
-       would paint across the whole desktop window. */
-    position: absolute;
-    height: 100%;
-    border-radius: 34px;
+    background: var(--color-surface-solid) url("/assets/weather-hero.png") center top / cover no-repeat;
   }
 
   .weather-hero {
