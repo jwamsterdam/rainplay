@@ -30,7 +30,7 @@ beforeAll(() => {
     value: vi.fn().mockReturnValue({ matches: false }),
   });
   // DayCarousel uses ResizeObserver
-  global.ResizeObserver = class {
+  (globalThis as typeof globalThis & { ResizeObserver: unknown }).ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
@@ -45,7 +45,7 @@ beforeAll(() => {
   // DayCarousel calls scrollTo when the selected day changes
   Element.prototype.scrollTo = vi.fn();
   // useCurrentLocation stubs geolocation — keep navigator.geolocation absent
-  Object.defineProperty(global.navigator, "geolocation", {
+  Object.defineProperty(globalThis.navigator, "geolocation", {
     value: undefined,
     configurable: true,
   });

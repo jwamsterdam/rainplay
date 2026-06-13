@@ -128,7 +128,7 @@ describe("searchLocations — URL construction", () => {
 
     await searchLocations("Haarlem");
 
-    const calledUrl = new URL(fetchMock.mock.calls[0][0] as string);
+    const calledUrl = new URL((fetchMock.mock.calls as unknown[][])[0][0] as string);
     expect(calledUrl.origin + calledUrl.pathname).toBe(
       "https://geocoding-api.open-meteo.com/v1/search",
     );
@@ -140,7 +140,7 @@ describe("searchLocations — URL construction", () => {
 
     await searchLocations("  Haarlem  ");
 
-    const url = new URL(fetchMock.mock.calls[0][0] as string);
+    const url = new URL((fetchMock.mock.calls as unknown[][])[0][0] as string);
     expect(url.searchParams.get("name")).toBe("Haarlem");
   });
 
@@ -150,7 +150,7 @@ describe("searchLocations — URL construction", () => {
 
     await searchLocations("Amsterdam");
 
-    const url = new URL(fetchMock.mock.calls[0][0] as string);
+    const url = new URL((fetchMock.mock.calls as unknown[][])[0][0] as string);
     expect(url.searchParams.get("language")).toBe("nl");
   });
 });
@@ -286,7 +286,7 @@ describe("searchLocations — AbortSignal forwarding", () => {
     const controller = new AbortController();
     await searchLocations("Haarlem", controller.signal);
 
-    const passedInit = fetchMock.mock.calls[0][1] as RequestInit;
+    const passedInit = (fetchMock.mock.calls as unknown[][])[0][1] as RequestInit;
     expect(passedInit?.signal).toBe(controller.signal);
   });
 
@@ -318,7 +318,7 @@ describe("searchLocations — AbortSignal forwarding", () => {
 
     // Called with undefined or an init without signal — fetch must still be called.
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const passedInit = fetchMock.mock.calls[0][1] as RequestInit | undefined;
+    const passedInit = (fetchMock.mock.calls as unknown[][])[0][1] as RequestInit | undefined;
     expect(passedInit?.signal).toBeUndefined();
   });
 });

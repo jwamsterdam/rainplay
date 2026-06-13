@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import React from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { locationErrorAtom, locationStatusAtom, selectedLocationAtom } from "../state/weatherAtoms";
 import { useCurrentLocation } from "./useCurrentLocation";
 
@@ -14,7 +14,7 @@ function makeWrapper() {
 }
 
 function stubGeolocation(impl: Partial<Geolocation>) {
-  Object.defineProperty(global.navigator, "geolocation", {
+  Object.defineProperty(globalThis.navigator, "geolocation", {
     value: impl,
     configurable: true,
     writable: true,
@@ -31,7 +31,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
-  Object.defineProperty(global.navigator, "geolocation", {
+  Object.defineProperty(globalThis.navigator, "geolocation", {
     value: undefined,
     configurable: true,
     writable: true,

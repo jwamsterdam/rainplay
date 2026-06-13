@@ -203,6 +203,23 @@ function makeNowLineLayer(hours: HourlyWeather[], rect: PlotRect | null, isToday
   };
 }
 
+function makeChartBorderLayer(rect: PlotRect | null) {
+  return function ChartBorderLayer() {
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+    return (
+      <rect
+        x={rect.x}
+        y={rect.y}
+        width={rect.width}
+        height={rect.height}
+        fill="none"
+        stroke="#dce3ea"
+        strokeWidth={1}
+      />
+    );
+  };
+}
+
 function tempDomain(hours: HourlyWeather[]): [number, number] {
   const temps = hours.map(h => h.temperatureC);
   const min = Math.floor(Math.min(...temps) / 2) * 2;
@@ -381,9 +398,9 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
             <Bar xAxisId="bg" yAxisId="bg" dataKey={() => 1} isAnimationActive={false} legendType="none" shape={plotRectProbe} />
 
             <CartesianGrid
-              strokeDasharray="4 6"
+              strokeDasharray="2 5"
               stroke="#dce3ea"
-              strokeWidth={1}
+              strokeWidth={0.5}
             />
 
             {/* Score badges — always visible */}
@@ -459,6 +476,10 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
                 isAnimationActive={false}
               />
             )}
+
+            {/* Solid border rectangle around the plot area — drawn after the
+                grid so it covers the dashed lines on all four edges. */}
+            <Customized component={makeChartBorderLayer(plotRect)} />
 
             {/* Dashed "now" marker at the exact current time — drawn last so it
                 paints on top of the grid and series. */}
