@@ -24,12 +24,10 @@ html {
      safe-area insets and CARRIES the sky; the bottom inset is owned by .decision-sheet. */
   height: 100%;
   min-height: calc(100% + env(safe-area-inset-top)); /* keeps html tall enough that the fixed sky fills the screen — no bottom white bar */
-  /* padding-bottom = safe-area-inset-top CANCELS the overshoot: min-height adds
-     one top-inset of height, which otherwise pushes the content (and the
-     attribution) ~59px past the physical bottom (cut off on iPhone 15). Trimming
-     the content box by the same amount pulls the bottom back up to the physical
-     edge, WITHOUT changing html's height — so the sky fill is untouched. */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-top) env(safe-area-inset-left);
+  /* No padding here: the content lives in .app-shell (position:fixed; inset:0),
+     which pins straight to the viewport. The status-bar and home-indicator insets
+     are applied per-element (.weather-hero top, .decision-sheet bottom). */
+  padding: 0;
   overflow: hidden;
   background: var(--color-surface-solid) url("/assets/weather-hero.png");
   background-position: center top;
@@ -58,12 +56,15 @@ button {
 }
 
 .app-shell {
-  /* Fills html's content box (height:100%). The sky now lives on `html` (a fixed
-     background), so the shell is transparent and just lays out hero + sheet. */
-  position: relative;
+  /* Pinned to the real viewport edges with position:fixed; inset:0 — the SAME
+     mechanism as the settings overlay, which renders correctly on iOS 26 where
+     %/viewport-unit heights flicker between 793 and 852 at cold launch. No height
+     unit, so the shell always matches the actual screen. The sky is the fixed
+     background on `html` behind it. */
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
   overflow: hidden;
   background: transparent;
 }
@@ -74,8 +75,9 @@ button {
   /* Lower floor so the decision sheet (incl. the Open-Meteo attribution) always
      fits within the viewport on iPhone and is not clipped by app-shell overflow. */
   min-height: clamp(200px, 40dvh, 460px);
-  /* html now owns the top safe-area inset; keeping it here too would double-pad. */
-  padding: 12px var(--space-5) clamp(18px, 3dvh, 44px);
+  /* Clear the status bar / Dynamic Island — .app-shell is fixed to the viewport
+     top, so the top inset is applied here on the content. */
+  padding: max(12px, env(safe-area-inset-top)) var(--space-5) clamp(18px, 3dvh, 44px);
   overflow: hidden;
 }
 
@@ -636,8 +638,8 @@ button {
 
 .settings-gear-button {
   position: absolute;
-  /* html owns the top safe-area inset, so this is measured from the padded edge. */
-  top: 14px;
+  /* .app-shell is fixed to the viewport top, so clear the status bar here. */
+  top: max(14px, env(safe-area-inset-top));
   right: 16px;
   z-index: 4;
   display: flex;
@@ -916,9 +918,10 @@ button {
   }
 
   .app-shell {
-    /* Centred fixed-size device frame on desktop; these explicit height/min-height
-       values override the mobile height:100% fill (same specificity, later in
-       source order). The sky lives here on desktop (inside the frame). */
+    /* Centred fixed-size device frame on desktop; override the mobile
+       position:fixed; inset:0 so the shell sits in flow inside the centred frame. */
+    position: relative;
+    inset: auto;
     width: 430px;
     height: 932px;
     min-height: 932px;
