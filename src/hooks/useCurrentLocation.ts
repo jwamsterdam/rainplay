@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useSetAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { hasGoogleMapsKey, reverseGeocodeLocation } from "../api/googleMaps";
 import { locationErrorAtom, locationStatusAtom, selectedLocationAtom } from "../state/weatherAtoms";
 
 export function useCurrentLocation() {
-  const setLocation = useSetAtom(selectedLocationAtom);
+  const [currentLocation, setLocation] = useAtom(selectedLocationAtom);
   const setStatus = useSetAtom(locationStatusAtom);
   const setError = useSetAtom(locationErrorAtom);
   const requestedOnMount = useRef(false);
@@ -69,8 +69,11 @@ export function useCurrentLocation() {
   useEffect(() => {
     if (requestedOnMount.current) return;
     requestedOnMount.current = true;
+    // Skip automatic GPS when the user already has a persisted location stored.
+    // The user can trigger GPS manually via refreshLocation (exposed via the UI).
+    if (currentLocation.source !== "default") return;
     refreshLocation().catch(() => {});
-  }, [refreshLocation]);
+  }, [currentLocation.source, refreshLocation]);
 
   return { refreshLocation };
 }

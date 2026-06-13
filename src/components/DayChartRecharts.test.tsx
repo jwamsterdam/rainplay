@@ -31,15 +31,16 @@ beforeAll(() => {
   vi.stubGlobal("ResizeObserver", ResizeObserverStub);
 
   // Canvas 2D context — SkyGradientCanvas calls getContext("2d").
-  HTMLCanvasElement.prototype.getContext = () =>
-    ({
-      createLinearGradient: () => ({ addColorStop: () => {} }),
-      fillRect: () => {},
-      clearRect: () => {},
-      drawImage: () => {},
-      setTransform: () => {},
-      fillStyle: "",
-    }) as unknown as CanvasRenderingContext2D;
+  // Cast via any: the overloaded getContext signature is too strict for a partial stub.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLCanvasElement.prototype as any).getContext = () => ({
+    createLinearGradient: () => ({ addColorStop: () => {} }),
+    fillRect: () => {},
+    clearRect: () => {},
+    drawImage: () => {},
+    setTransform: () => {},
+    fillStyle: "",
+  });
 
   // requestAnimationFrame — makePlotRectProbe calls it to flush layout rect.
   // Invoke synchronously so tests don't need timer control.

@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 import type { ForecastLocation } from "../api/openMeteo";
 import type { DayOption, HorizonOption } from "../types";
 
@@ -21,7 +22,10 @@ selectedDayAtom.debugLabel = "selectedDayAtom";
 export const selectedHorizonAtom = atom<HorizonOption>("Hele dag");
 selectedHorizonAtom.debugLabel = "selectedHorizonAtom";
 
-export const selectedLocationAtom = atom<ForecastLocation>(defaultLocation);
+export const selectedLocationAtom = atomWithStorage<ForecastLocation>(
+  "rainplay.selectedLocation",
+  defaultLocation,
+);
 selectedLocationAtom.debugLabel = "selectedLocationAtom";
 
 export const savedLocationsAtom = atom<ForecastLocation[]>(defaultLocations);
