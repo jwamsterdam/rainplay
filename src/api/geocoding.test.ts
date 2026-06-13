@@ -47,7 +47,6 @@ function makeGeocodingPayload(overrides: Record<string, unknown> = {}) {
         latitude: 52.38739,
         longitude: 4.64592,
         country: "Netherlands",
-        admin1: "North Holland",
       },
       {
         id: 12345678,

@@ -298,13 +298,12 @@ describe("SegmentedControl — compact mode", () => {
 // ---------------------------------------------------------------------------
 
 describe("SegmentedControl — RAF indicator transform", () => {
-  let rafSpy: ReturnType<typeof vi.spyOn>;
   let pendingCallbacks: Array<FrameRequestCallback> = [];
 
   beforeEach(() => {
     pendingCallbacks = [];
     // Replace RAF with a stub that queues callbacks; we invoke them manually.
-    rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
       pendingCallbacks.push(cb);
       return pendingCallbacks.length; // fake handle
     });
@@ -323,10 +322,8 @@ describe("SegmentedControl — RAF indicator transform", () => {
   }
 
   it("sets indicator transform to translateX(0%) when fraction ref is 0", () => {
-    let capturedRef: React.RefObject<number> | null = null;
-
     const { container } = render(
-      <IndicatorTestWrapper onRef={(r) => { capturedRef = r; }} />,
+      <IndicatorTestWrapper onRef={() => undefined} />,
     );
 
     // The useEffect queued one RAF. Flush it — tick() runs with fraction=0.
@@ -382,10 +379,8 @@ describe("SegmentedControl — RAF indicator transform", () => {
   });
 
   it("does NOT update transform when fraction ref value has not changed (lastFraction guard)", () => {
-    let capturedRef: React.RefObject<number> | null = null;
-
     const { container } = render(
-      <IndicatorTestWrapper onRef={(r) => { capturedRef = r; }} />,
+      <IndicatorTestWrapper onRef={() => undefined} />,
     );
 
     act(() => { flushRaf(); }); // First tick: sets transform for fraction=0

@@ -215,35 +215,6 @@ export function mixRgba(c1: string, c2: string): string {
   return `rgba(${r}, ${g}, ${bl}, ${alpha})`;
 }
 
-/**
- * Linearly interpolate between two rgba() colour strings.
- * t=0 returns c1, t=1 returns c2.
- * Kept as a public colour helper; the sky gradient now interpolates via the
- * canvas (addColorStop), but this remains available for callers/tests.
- */
-export function interpolateRgba(c1: string, c2: string, t: number): string {
-  const a = parseRgba(c1);
-  const b = parseRgba(c2);
-  const r = Math.round(a.r + (b.r - a.r) * t);
-  const g = Math.round(a.g + (b.g - a.g) * t);
-  const bl = Math.round(a.b + (b.b - a.b) * t);
-  const alpha = Math.round((a.a + (b.a - a.a) * t) * 100) / 100;
-  return `rgba(${r}, ${g}, ${bl}, ${alpha})`;
-}
-
-export type BlendPoint = { blendIndex: number; blendColor: string };
-
-export function buildBlendData(hours: HourlyWeather[], colors: CellColors): BlendPoint[] {
-  const result: BlendPoint[] = [];
-  for (let i = 0; i <= hours.length - 2; i++) {
-    result.push({
-      blendIndex: i + 0.5,
-      blendColor: mixRgba(cellFill(hours[i], colors), cellFill(hours[i + 1], colors)),
-    });
-  }
-  return result;
-}
-
 export type GradientStop = { offset: number; color: string };
 
 /**

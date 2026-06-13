@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import type { ForecastLocation } from "../api/openMeteo";
 import { MIN_QUERY_LENGTH, searchLocations } from "../api/geocoding";

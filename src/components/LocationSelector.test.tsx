@@ -74,6 +74,7 @@ describe("LocationSelector", () => {
     render(<LocationSelector onUseCurrentLocation={onUseCurrentLocation} />, { wrapper: Wrapper });
     fireEvent.click(screen.getByRole("menuitem", { name: /huidige locatie/i }));
     expect(onUseCurrentLocation).toHaveBeenCalledOnce();
+    await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
   });
 
   it("disables the GPS button while locating", () => {

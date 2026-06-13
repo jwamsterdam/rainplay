@@ -5,7 +5,6 @@ import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
 import { buildSkyGradientStops } from "../lib/chart";
 import { nowFraction } from "../lib/nowMarker";
-import { ToggleButton } from "./ToggleButton";
 
 const RAIN_COLOR = "#78b4f8";
 const TEMP_COLOR = "#f97316";

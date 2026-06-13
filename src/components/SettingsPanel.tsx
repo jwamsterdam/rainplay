@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ToggleButton } from "./ToggleButton";
-import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
 import { getColdLaunchSamples, measureCssHeight } from "../lib/coldLaunchViewport";
-
-// Re-export so existing import sites that pulled these from SettingsPanel keep
-// working; the source of truth now lives in the lightweight ./cellColors module.
-export { defaultCellColors };
-export type { CellColors };
 
 type ColorKey = keyof CellColors;
 

@@ -3,15 +3,13 @@ import {
   bestOutdoorWindow,
   bestStartTime,
   bestWindowLabel,
-  buildBlendData,
   cellFill,
-  interpolateRgba,
   outdoorSummaryLabel,
   parseRgba,
 } from "./chart";
 import type { OutdoorWindow } from "./chart";
 import type { CellColors } from "../components/cellColors";
-import type { HourlyWeather, WeatherKind } from "../types";
+import type { HourlyWeather } from "../types";
 
 const colors: CellColors = {
   sun: "rgba(255, 196, 0, 0.24)",
@@ -183,21 +181,4 @@ describe("chart color helpers", () => {
     expect(parseRgba("not-a-color")).toEqual({ r: 0, g: 0, b: 0, a: 1 });
   });
 
-  it("interpolates rgba channels and alpha", () => {
-    expect(interpolateRgba("rgba(0, 0, 0, 0)", "rgba(10, 20, 30, 1)", 0.5)).toBe(
-      "rgba(5, 10, 15, 0.5)",
-    );
-  });
-
-  it("builds blend data between adjacent hours", () => {
-    const blendData = buildBlendData([
-      hour("10:00", { kind: "sun" }),
-      hour("11:00", { kind: "rain" }),
-      hour("12:00", { kind: "cloud" }),
-    ], colors);
-
-    expect(blendData).toHaveLength(2);
-    expect(blendData[0].blendIndex).toBe(0.5);
-    expect(blendData[1].blendIndex).toBe(1.5);
-  });
 });

@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import React from "react";
@@ -60,16 +60,6 @@ function loadingForecast() {
     isLoading: true,
     isError: false,
     status: "pending" as const,
-    refetch: vi.fn(),
-  } as unknown as ReturnType<typeof useForecastQuery>;
-}
-
-function errorForecast() {
-  return {
-    data: undefined,
-    isLoading: false,
-    isError: true,
-    status: "error" as const,
     refetch: vi.fn(),
   } as unknown as ReturnType<typeof useForecastQuery>;
 }

@@ -10,7 +10,6 @@ type GeocodingResult = {
   latitude: number;
   longitude: number;
   country?: string;
-  admin1?: string;
 };
 
 type GeocodingResponse = {

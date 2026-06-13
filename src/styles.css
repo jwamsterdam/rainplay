@@ -18,10 +18,9 @@ html {
   /* iOS 26 standalone PWA: NO viewport unit (svh/dvh/lvh/innerHeight/visualViewport)
      is reliable at cold launch — on-device capture showed all of them read the full
      physical height at first paint and only settle later via an untriggerable geometry
-     event. So the outer fill uses the canonical PERCENTAGE + safe-area recipe (the
-     documented companion to black-translucent + viewport-fit=cover). `%` resolves
-     correctly from the containing block at first paint. html OWNS the top + side
-     safe-area insets and CARRIES the sky; the bottom inset is owned by .decision-sheet. */
+     event. So the content shell is pinned with position: fixed; inset: 0 instead
+     of being sized by a height value. html only carries the fixed sky behind it;
+     visible safe-area insets are applied per element. */
   height: 100%;
   min-height: calc(100% + env(safe-area-inset-top)); /* keeps html tall enough that the fixed sky fills the screen — no bottom white bar */
   /* No padding here: the content lives in .app-shell (position:fixed; inset:0),
@@ -171,8 +170,7 @@ button {
 }
 
 .location-menu-current,
-.location-menu-item,
-.location-add-button {
+.location-menu-item {
   min-height: 36px;
   border: 0;
   border-radius: 12px;
@@ -318,18 +316,6 @@ button {
   margin: -1px 2px 0;
   color: var(--color-ink-soft);
   font-size: 12px;
-}
-
-.location-add-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-best);
-  text-align: center;
-}
-
-.location-add-button:disabled {
-  color: var(--color-ink-soft);
 }
 
 .location-form-error {
@@ -570,68 +556,6 @@ button {
 
 .loading-retry:active {
   opacity: 0.85;
-}
-
-.chart {
-  display: block;
-  width: 100%;
-  height: clamp(224px, 31dvh, 276px);
-}
-
-.axis-label,
-.time-label,
-.temperature-axis-label {
-  fill: var(--color-ink-muted);
-  font-size: 19px;
-  font-weight: 500;
-}
-
-.temperature-axis-label {
-  fill: rgba(255, 116, 50, 0.82);
-  font-size: 17px;
-  font-weight: 620;
-}
-
-.temperature-line {
-  stroke: var(--color-temperature);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 4px;
-  opacity: 0.72;
-}
-
-.best-window-highlight {
-  fill: rgba(147, 191, 0, 0.24);
-  pointer-events: none;
-}
-
-.temperature-point {
-  fill: #ffffff;
-  stroke: var(--color-temperature);
-  stroke-width: 3px;
-}
-
-.score-badge {
-  filter: drop-shadow(0 4px 8px rgba(16, 24, 40, 0.08));
-}
-
-.score-badge-text {
-  fill: #ffffff;
-  font-size: 24px;
-  font-weight: 760;
-}
-
-.chart-weather-icon {
-  width: 36px;
-  height: 36px;
-  opacity: 0.9;
-}
-
-.rain-bar {
-  fill: var(--color-rain);
-  stroke: rgba(255, 255, 255, 0.95);
-  stroke-width: 5px;
-  filter: drop-shadow(0 6px 10px rgba(67, 145, 235, 0.15));
 }
 
 /* --- Settings gear button --- */
@@ -900,9 +824,9 @@ button {
 }
 
 @media (min-width: 720px) {
-  /* Desktop: neutralise the mobile %+safe-area html recipe (no insets, no fixed
-     sky) and move the sky onto the device-frame .app-shell instead, so it stays
-     inside the rounded mockup rather than painting across the whole window. */
+  /* Desktop: neutralise the mobile fixed sky and move it onto the device-frame
+     .app-shell instead, so it stays inside the rounded mockup rather than
+     painting across the whole window. */
   html {
     min-height: 100%;
     padding: 0;
