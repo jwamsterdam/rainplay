@@ -60,8 +60,8 @@ export function WeatherScreen() {
     locationStatus === "unsupported" ||
     locationStatus === "error";
   const forecast = useForecastQuery(location, locationResolved);
-  const hourly = forecast.data?.hourly ?? [];
-  const minutely15 = forecast.data?.minutely15 ?? [];
+  const hourly = useMemo(() => forecast.data?.hourly ?? [], [forecast.data]);
+  const minutely15 = useMemo(() => forecast.data?.minutely15 ?? [], [forecast.data]);
   const showHorizonSelector = day === "Vandaag";
 
   useEffect(() => {

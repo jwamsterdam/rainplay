@@ -15,7 +15,8 @@
 import { render } from "@testing-library/react";
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import type { HourlyWeather } from "../types";
-import { DayChartRecharts, scoreColor, formatTick } from "./DayChartRecharts";
+import { DayChartRecharts } from "./DayChartRecharts";
+import { scoreColor, formatTick } from "../lib/chartHelpers";
 
 // ---------------------------------------------------------------------------
 // Global browser-API stubs required for Recharts + canvas in jsdom
