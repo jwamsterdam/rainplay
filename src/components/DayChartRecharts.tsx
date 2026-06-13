@@ -98,7 +98,7 @@ function WeatherIconTick(props: { x?: number | string; y?: number | string; payl
   );
 }
 
-function scoreColor(score: number): string {
+export function scoreColor(score: number): string {
   if (score >= 8) return "#93bf00";
   if (score >= 6) return "#f58a1f";
   if (score >= 4) return "#f3b329";
@@ -137,7 +137,7 @@ function ScoreTick(props: { x?: number | string; y?: number | string; payload?: 
 // --- Helpers ---
 
 // "08:00" → "8:00", "12:00" → "12:00", "ma" → "ma" (week-view dag-namen)
-function formatTick(t: string): string {
+export function formatTick(t: string): string {
   if (!t.includes(":")) return t;
   const [hh = "0", mm = "00"] = t.split(":");
   return `${parseInt(hh, 10)}:${mm}`;
@@ -220,6 +220,7 @@ function makeChartBorderLayer(rect: PlotRect | null) {
 }
 
 function tempDomain(hours: HourlyWeather[]): [number, number] {
+  if (hours.length === 0) return [0, 20];
   const temps = hours.map(h => h.temperatureC);
   const min = Math.floor(Math.min(...temps) / 2) * 2;
   const max = Math.ceil(Math.max(...temps) / 2) * 2;
