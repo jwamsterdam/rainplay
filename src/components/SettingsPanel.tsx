@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ToggleButton } from "./ToggleButton";
 import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
+import { getColdLaunchSamples, measureCssHeight } from "../lib/coldLaunchViewport";
 
 // Re-export so existing import sites that pulled these from SettingsPanel keep
 // working; the source of truth now lives in the lightweight ./cellColors module.
@@ -133,16 +134,8 @@ type Diagnostics = {
   displayMode: string;
 };
 
-// Measure the resolved pixel height of a CSS length (e.g. "100lvh" or
-// "env(safe-area-inset-bottom)") via a 1px-wide fixed probe element.
-function measureCssHeight(value: string): number {
-  const probe = document.createElement("div");
-  probe.style.cssText = `position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:${value};`;
-  document.body.appendChild(probe);
-  const px = probe.getBoundingClientRect().height;
-  probe.remove();
-  return Math.round(px);
-}
+// measureCssHeight (the 1px-fixed-probe trick) lives in lib/coldLaunchViewport so
+// it can be shared with the cold-launch capture; re-used here for the live read.
 
 // Distinguish a true installed/home-screen launch from a Safari tab. iOS does
 // not always match (display-mode: standalone) for `display: fullscreen`
@@ -193,7 +186,27 @@ function DiagnosticsBlock() {
       <div>visualVP {diag.visualViewportHeight ?? "—"}</div>
       <div>dvh {diag.dvh} · svh {diag.svh} · lvh {diag.lvh}</div>
       <div>safe-top {diag.safeAreaTop} · safe-bottom {diag.safeAreaBottom}</div>
+      <ColdLaunchSamples />
     </div>
+  );
+}
+
+// Viewport units captured around cold-launch first paint (see
+// lib/coldLaunchViewport). Surfaces the iOS dvh transient the live read above
+// can't catch, since the panel opens long after launch.
+function ColdLaunchSamples() {
+  const samples = getColdLaunchSamples();
+  if (samples.length === 0) return null;
+
+  return (
+    <>
+      <div className="settings-diagnostics-title">Cold-launch</div>
+      {samples.map((s) => (
+        <div key={s.label}>
+          {s.label} +{s.t}ms · iH {s.innerHeight} · d {s.dvh} · s {s.svh} · l {s.lvh} · vp {s.visualVP ?? "—"}
+        </div>
+      ))}
+    </>
   );
 }
 

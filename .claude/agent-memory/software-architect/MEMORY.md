@@ -2,5 +2,5 @@
 - [User profile](user_profile.md) — owner of Rainplay, prefers Dutch UI copy, iPhone-first PWA, pragmatic over abstract
 - [Sky gradient via canvas](project_sky_gradient.md) — render chart sky gradient as one offscreen canvas, not stacked translucent SVG rects (seam fix)
 - [Carousel render cost](project_carousel_render.md) — 4 chart panels always mounted; memoize the heavy Recharts leaf before touching atoms or replacing Recharts
-- [iOS viewport fill](project_ios_viewport_fill.md) — viewport-fill flip-flopped through every strategy; verdict is over-fill+clip (lvh/svh), NOT position:fixed, NOT JS innerHeight; verify build via version string on-device
+- [iOS viewport fill](project_ios_viewport_fill.md) — floor shell on STABLE svh (not dynamic dvh/lvh/position:fixed/JS innerHeight) to kill cold-launch whitespace flicker; keep -16px sheet trim; verify build via version on-device
 - [Chart logic belongs in lib](feedback_chart_logic_in_lib.md) — chart decision helpers (now-marker, horizon windows) must be pure, clock-injected, unit-tested, in src/lib — not in the chart component

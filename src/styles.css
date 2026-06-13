@@ -4,6 +4,10 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  /* How much the .decision-sheet trims off the home-indicator safe-area inset so
+     the attribution sits lower (less white space) while still clearing the
+     indicator. See .decision-sheet padding. */
+  --sheet-safe-trim: 16px;
 }
 
 * {
@@ -13,7 +17,7 @@
 html {
   height: 100%;
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
   overflow: hidden;
   /* Paint the canvas white so the iOS home-indicator gap and Safari
      toolbar gap below the app-shell never show a system background colour */
@@ -25,7 +29,7 @@ body {
   min-width: 320px;
   height: 100%;
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
   overflow: hidden;
   /* white so any sliver below the sheet (PWA safe-area / Safari toolbars) blends in */
   background: var(--color-surface-solid);
@@ -34,7 +38,7 @@ body {
 #root {
   height: 100%;
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
 }
 
 button {
@@ -55,7 +59,7 @@ button {
      equals the full screen, in a Safari tab it tracks the area above the
      toolbar. 100vh is the legacy fallback. */
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
   overflow: hidden;
   /* Full-frame sky behind everything; the sheet floats as a centred card on top,
      so the background shows through beside it. Fallback colour blends the bottom. */
@@ -390,7 +394,7 @@ button {
      space beneath it) while still clearing the indicator. The sheet's white
      background still fills the rounded corners below, since the app-shell fills
      to the physical bottom. */
-  padding: 14px 10px max(10px, calc(env(safe-area-inset-bottom) - 16px));
+  padding: 14px 10px max(10px, calc(env(safe-area-inset-bottom) - var(--sheet-safe-trim)));
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   /* Solid white (not the translucent surface) so the sheet's colour matches the
      body fill below it — no separate "white bar" seam at the home-indicator gap. */
@@ -903,7 +907,7 @@ button {
 
   .app-shell {
     /* Centred fixed-size device frame on desktop; these explicit height/min-height
-       values override the mobile 100lvh/100svh fill (same specificity, later in
+       values override the mobile 100vh/100svh fill (same specificity, later in
        source order). */
     width: 430px;
     height: 932px;
