@@ -41,3 +41,11 @@ locationStatusAtom.debugLabel = "locationStatusAtom";
 
 export const locationErrorAtom = atom<string | null>(null);
 locationErrorAtom.debugLabel = "locationErrorAtom";
+
+// Unix-timestamp (ms) van de laatste succesvolle weerfetch
+export const dataTimestampAtom = atom<number | null>(null);
+dataTimestampAtom.debugLabel = "dataTimestampAtom";
+
+// true als browser geen netwerk heeft
+export const isOfflineAtom = atom<boolean>(false);
+isOfflineAtom.debugLabel = "isOfflineAtom";

@@ -45,7 +45,7 @@ export default defineConfig({
               networkTimeoutSeconds: 8,
               expiration: {
                 maxEntries: 8,           // ~enkele locaties
-                maxAgeSeconds: 60 * 60,  // max 1 uur oude data serveren
+                maxAgeSeconds: 3 * 60 * 60,  // max 3 uur oude data serveren bij offline
               },
               cacheableResponse: { statuses: [0, 200] },
             },

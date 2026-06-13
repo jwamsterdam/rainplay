@@ -17,6 +17,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Provider as JotaiProvider } from "jotai";
 import React from "react";
 import { useForecastQuery } from "./weather";
 import type { ForecastLocation } from "../api/openMeteo";
@@ -65,7 +66,11 @@ function makeWrapper(client?: QueryClient) {
     });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: qc }, children);
+    return React.createElement(
+      JotaiProvider,
+      null,
+      React.createElement(QueryClientProvider, { client: qc }, children),
+    );
   }
 
   return { client: qc, Wrapper };
@@ -167,7 +172,7 @@ describe("useForecastQuery — error", () => {
 
     const client = new QueryClient();
     function Wrapper({ children }: { children: React.ReactNode }) {
-      return React.createElement(QueryClientProvider, { client }, children);
+      return React.createElement(JotaiProvider, null, React.createElement(QueryClientProvider, { client }, children));
     }
 
     const { result } = renderHook(() => useForecastQuery(LOCATION, true), { wrapper: Wrapper });
@@ -235,7 +240,7 @@ describe("useForecastQuery — retry policy", () => {
 
     const strictClient = new QueryClient();
     function StrictWrapper({ children }: { children: React.ReactNode }) {
-      return React.createElement(QueryClientProvider, { client: strictClient }, children);
+      return React.createElement(JotaiProvider, null, React.createElement(QueryClientProvider, { client: strictClient }, children));
     }
 
     const { result } = renderHook(() => useForecastQuery(LOCATION, true), {
@@ -252,7 +257,7 @@ describe("useForecastQuery — retry policy", () => {
 
     const strictClient = new QueryClient();
     function StrictWrapper({ children }: { children: React.ReactNode }) {
-      return React.createElement(QueryClientProvider, { client: strictClient }, children);
+      return React.createElement(JotaiProvider, null, React.createElement(QueryClientProvider, { client: strictClient }, children));
     }
 
     const { result } = renderHook(() => useForecastQuery(LOCATION, true), {

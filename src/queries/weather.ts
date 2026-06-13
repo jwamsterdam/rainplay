@@ -1,8 +1,13 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSetAtom } from "jotai";
 import { fetchOpenMeteoForecast, type ForecastLocation } from "../api/openMeteo";
+import { dataTimestampAtom } from "../state/weatherAtoms";
 
 export function useForecastQuery(location: ForecastLocation, enabled = true) {
-  return useQuery({
+  const setDataTimestamp = useSetAtom(dataTimestampAtom);
+
+  const result = useQuery({
     queryKey: ["forecast", location.latitude, location.longitude],
     queryFn: () => fetchOpenMeteoForecast(location),
 
@@ -35,4 +40,10 @@ export function useForecastQuery(location: ForecastLocation, enabled = true) {
     },
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
+
+  useEffect(() => {
+    if (result.data) setDataTimestamp(Date.now());
+  }, [result.data, setDataTimestamp]);
+
+  return result;
 }

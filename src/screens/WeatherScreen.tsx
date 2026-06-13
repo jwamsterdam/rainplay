@@ -12,6 +12,8 @@ const SettingsPanel = lazy(() =>
   import("../components/SettingsPanel").then((m) => ({ default: m.SettingsPanel })),
 );
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { OfflineBanner } from "../components/OfflineBanner";
 import { bestOutdoorWindow, bestStartTime, bestWindowLabel, outdoorSummaryLabel } from "../lib/chart";
 import { headerDateLabel, visibleHoursForSelection, visiblePointsForTodayHorizon } from "../lib/weatherView";
 import { useForecastQuery } from "../queries/weather";
@@ -46,6 +48,7 @@ export function WeatherScreen() {
   const locationError = useAtomValue(locationErrorAtom);
   const locationStatus = useAtomValue(locationStatusAtom);
   const { refreshLocation } = useCurrentLocation();
+  useNetworkStatus();
 
   // Hold the forecast until the location is settled, so a cold start with GPS
   // does NOT fetch once for the placeholder default and again for the real GPS
@@ -88,6 +91,7 @@ export function WeatherScreen() {
 
   return (
     <main className="app-shell">
+      <OfflineBanner />
       <section className="weather-hero" aria-label="Huidig weer">
         <LocationSelector onUseCurrentLocation={refreshLocation} />
         {locationError ? <p className="location-status">{locationError}</p> : null}
