@@ -32,18 +32,19 @@ describe("skyBrightness", () => {
     expect(skyBrightness(hour("cloud", false, 0))).toBe(0);
   });
 
-  it("returns 1 for a fully bright day (radiation >= 100 W/m²)", () => {
+  it("returns 1 for any meaningful daylight (radiation >= 20 W/m²)", () => {
+    expect(skyBrightness(hour("sun", true, 20))).toBe(1);
     expect(skyBrightness(hour("sun", true, 100))).toBe(1);
     expect(skyBrightness(hour("sun", true, 800))).toBe(1);
   });
 
-  it("scales linearly between 0 and 100 W/m²", () => {
-    expect(skyBrightness(hour("sun", true, 50))).toBeCloseTo(0.5);
-    expect(skyBrightness(hour("sun", true, 10))).toBeCloseTo(0.1);
+  it("scales linearly within the twilight zone (0–20 W/m²)", () => {
+    expect(skyBrightness(hour("sun", true, 10))).toBeCloseTo(0.5);
+    expect(skyBrightness(hour("cloud", false, 5))).toBeCloseTo(0.25);
   });
 
   it("produces near-zero brightness for sunset radiation (2 W/m²)", () => {
-    expect(skyBrightness(hour("sun", true, 2))).toBeCloseTo(0.02);
+    expect(skyBrightness(hour("sun", true, 2))).toBeCloseTo(0.1);
   });
 
   it("gives the same brightness for the same radiation regardless of isDay", () => {

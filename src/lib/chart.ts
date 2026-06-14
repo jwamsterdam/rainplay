@@ -214,18 +214,20 @@ export function mixRgba(c1: string, c2: string): string {
   return lerpRgba(c1, c2, 0.5);
 }
 
-// Radiation (W/m²) at or above which the sky is considered "full day".
-// 100 W/m² is well above civil twilight (~5–20 W/m²) but easily reached by an
-// overcast Dutch summer day, so sunset hours naturally fade to near-night while
-// overcast daytime hours remain visibly bright.
-const FULL_DAY_RADIATION_WM2 = 100;
+// Radiation (W/m²) at or above which the sky is treated as "full day".
+// 20 W/m² sits just above civil twilight (~5 W/m²), so only the brief
+// minutes around actual sunrise/sunset are blended — overcast daytime
+// hours (typically 50–300 W/m²) keep their crisp full-day colour.
+const TWILIGHT_RADIATION_WM2 = 20;
 
 // Maps shortwave radiation to a [0, 1] sky brightness used to blend between
 // night and day colours. Using radiation instead of the binary is_day flag
 // gives a smooth, time-consistent sunset/sunrise transition: the same radiation
 // value produces the same colour regardless of which horizon view is shown.
+// Only the narrow twilight zone (0–20 W/m²) is blended; all meaningful
+// daylight reaches brightness 1 immediately.
 export function skyBrightness(hour: HourlyWeather): number {
-  return Math.min(hour.radiation / FULL_DAY_RADIATION_WM2, 1);
+  return Math.min(hour.radiation / TWILIGHT_RADIATION_WM2, 1);
 }
 
 export function cellFill(hour: HourlyWeather, colors: CellColors): string {
