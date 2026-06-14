@@ -15,6 +15,9 @@ export type HourlyWeather = {
   radiation: number;
   isDay: boolean;
   kind: WeatherKind;
+  // Unix timestamp (ms) of sunset for the same calendar day, used for civil
+  // twilight falloff. Optional so test fixtures stay lean.
+  sunsetMs?: number;
 };
 
 export type ForecastPoint = HourlyWeather;

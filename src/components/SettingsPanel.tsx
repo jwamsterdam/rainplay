@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useAtom } from "jotai";
 import { ToggleButton } from "./ToggleButton";
 import type { CellColors } from "./cellColors";
 import { getColdLaunchSamples, measureCssHeight } from "../lib/coldLaunchViewport";
+import { twilightRadiationAtom } from "../state/weatherAtoms";
 
 type ColorKey = keyof CellColors;
 
@@ -223,6 +225,7 @@ export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, show
   const inputRefs = useRef<Record<ColorKey, HTMLInputElement | null>>({
     sun: null, partly: null, cloud: null, rain: null, night: null,
   });
+  const [twilightRad, setTwilightRad] = useAtom(twilightRadiationAtom);
 
   function handleSwatchClick(key: ColorKey) {
     inputRefs.current[key]?.click();
@@ -253,6 +256,25 @@ export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, show
             <ToggleButton active={showRain} color="#78b4f8" label="Neerslag" onClick={() => onShowRainChange(!showRain)} />
             <ToggleButton active={showIcons} color="#64748b" label="Iconen" onClick={() => onShowIconsChange(!showIcons)} />
           </div>
+        </div>
+
+        <div className="settings-section">
+          <h3 className="settings-section-title">Schemering drempel</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <input
+              type="range"
+              min={1}
+              max={200}
+              step={1}
+              value={twilightRad}
+              onChange={(e) => setTwilightRad(Number(e.target.value))}
+              className="settings-alpha-slider"
+              style={{ flex: 1 }}
+              aria-label="Schemering drempel in W/m²"
+            />
+            <span className="settings-alpha-value">{twilightRad} W/m²</span>
+          </div>
+          <p className="settings-hint" style={{ marginTop: 4, marginBottom: 0 }}>Lager = scherpere overgang · standaard 20</p>
         </div>
 
         <p className="settings-hint">Tik op het kleurvlak om de kleur te kiezen. Sleep de schuifregelaar voor de intensiteit.</p>

@@ -14,7 +14,7 @@ export type CellColors = {
 };
 
 export const defaultCellColors: CellColors = {
-  sun: "rgba(255, 196, 0, 0.24)",
+  sun: "rgba(255, 196, 0, 0.33)",
   partly: "rgba(243, 204, 73, 0.15)",
   cloud: "rgba(148, 191, 255, 0.15)",
   rain: "rgba(139, 149, 156, 0.37)",

@@ -171,8 +171,8 @@ describe("outdoorSummaryLabel", () => {
 });
 
 describe("chart color helpers", () => {
-  it("uses the night color for non-daylight cells", () => {
-    expect(cellFill(hour("23:00", { isDay: false, kind: "sun" }), colors)).toBe(colors.night);
+  it("uses the night color when radiation is zero", () => {
+    expect(cellFill(hour("23:00", { isDay: false, kind: "sun", radiation: 0 }), colors)).toBe(colors.night);
   });
 
   it("parses rgb and rgba strings with fallback for invalid values", () => {

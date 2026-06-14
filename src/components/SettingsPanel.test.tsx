@@ -99,9 +99,8 @@ describe("SettingsPanel", () => {
   it("calls onColorsChange when the alpha slider is moved", () => {
     const onColorsChange = vi.fn();
     render(<SettingsPanel {...defaultProps({ onColorsChange })} />);
-    const sliders = screen.getAllByRole("slider");
-    // Move the first slider (Zon) to 0.5
-    fireEvent.change(sliders[0], { target: { value: "0.5" } });
+    const zonSlider = screen.getByRole("slider", { name: "Intensiteit voor Zon" });
+    fireEvent.change(zonSlider, { target: { value: "0.5" } });
     expect(onColorsChange).toHaveBeenCalledOnce();
     const [updatedColors] = onColorsChange.mock.calls[0];
     expect(updatedColors.sun).toMatch(/rgba\(\d+, \d+, \d+, 0\.5\)/);

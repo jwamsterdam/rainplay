@@ -167,6 +167,12 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
   };
 }
 
+function sunsetMsFor(data: OpenMeteoResponse, isoTime: string): number | undefined {
+  const date = isoTime.slice(0, 10);
+  const i = data.daily.time.indexOf(date);
+  return i >= 0 ? new Date(data.daily.sunset[i]).getTime() : undefined;
+}
+
 function toHourlyWeather(data: OpenMeteoResponse, index: number, isoTime: string): HourlyWeather {
   const precipitationMm = valueAt(data.hourly.precipitation, index);
   const precipitationProbability = valueAt(data.hourly.precipitation_probability, index);
@@ -188,6 +194,7 @@ function toHourlyWeather(data: OpenMeteoResponse, index: number, isoTime: string
     radiation,
     isDay,
     kind,
+    sunsetMs: sunsetMsFor(data, isoTime),
   };
 }
 
@@ -213,6 +220,7 @@ function toMinutelyWeather(data: OpenMeteoResponse, index: number, isoTime: stri
     radiation,
     isDay,
     kind,
+    sunsetMs: sunsetMsFor(data, isoTime),
   };
 }
 

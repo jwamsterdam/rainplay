@@ -9,12 +9,11 @@
 //
 // `now` is injected (never read from new Date() inside) so the math is
 // deterministic and unit-testable in jsdom. No DOM, no React.
-
-// "HH:MM" → minutes since midnight. Mirrors minutesOf in DayChartRecharts.
-function minutesOf(time: string): number {
-  const [hh = "0", mm = "00"] = time.split(":");
-  return parseInt(hh, 10) * 60 + parseInt(mm, 10);
-}
+//
+// Uses isoTime (full date + time) for comparison so cross-midnight windows
+// (e.g. +6 uur: 23:00 → 04:30 next day) work correctly — a plain HH:MM
+// minutes-since-midnight comparison breaks because 0:00 (0) sorts before
+// 23:00 (1380), causing the marker to jump to the right edge at midnight.
 
 /**
  * Horizontal position of `now` as a fraction in [0,1] across the plot, using
@@ -31,20 +30,19 @@ function minutesOf(time: string): number {
  * Returns null ONLY for a degenerate input (fewer than 2 points — can't
  * interpolate); the caller then renders nothing.
  */
-export function nowFraction(points: { time: string }[], now: Date): number | null {
+export function nowFraction(points: { isoTime: string }[], now: Date): number | null {
   const n = points.length;
   if (n < 2) return null;
 
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const mins = points.map((p) => minutesOf(p.time));
+  const nowMs = now.getTime();
+  const timestamps = points.map((p) => new Date(p.isoTime).getTime());
 
-  // Index i such that mins[i] <= now <= mins[i+1]; t is the fraction between.
-  // If now precedes mins[0], i stays 0 and t goes negative; if now follows the
-  // last point, i is the last gap and t exceeds 1 — both are clamped below.
+  // Find the last bracket i such that timestamps[i] <= nowMs.
+  // timestamps is monotonically increasing (cross-midnight safe via isoTime dates).
   let i = 0;
-  while (i < n - 2 && mins[i + 1] <= nowMin) i++;
-  const span = mins[i + 1] - mins[i] || 1;
-  const t = (nowMin - mins[i]) / span;
+  while (i < n - 2 && timestamps[i + 1] <= nowMs) i++;
+  const span = timestamps[i + 1] - timestamps[i] || 1;
+  const t = (nowMs - timestamps[i]) / span;
 
   const fraction = (i + 0.5 + t) / n;
   return Math.min(1, Math.max(0, fraction));

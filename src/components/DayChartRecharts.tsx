@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useAtomValue } from "jotai";
 import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, Customized } from "recharts";
 import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./cellColors";
@@ -7,6 +8,7 @@ import { buildSkyGradientStops } from "../lib/chart";
 import { nowFraction } from "../lib/nowMarker";
 import { useElementSize } from "../hooks/useElementSize";
 import { scoreColor, formatTick } from "../lib/chartHelpers";
+import { twilightRadiationAtom } from "../state/weatherAtoms";
 
 const RAIN_COLOR = "#78b4f8";
 const TEMP_COLOR = "#f97316";
@@ -292,6 +294,7 @@ function makePlotRectProbe(onMeasure: (rect: PlotRect) => void) {
 // Canvas that paints the sky gradient for the measured plot rect.
 function SkyGradientCanvas({ hours, colors, rect }: { hours: HourlyWeather[]; colors: CellColors; rect: PlotRect | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const twilightWm2 = useAtomValue(twilightRadiationAtom);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -311,14 +314,14 @@ function SkyGradientCanvas({ hours, colors, rect }: { hours: HourlyWeather[]; co
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssWidth, cssHeight);
 
-    const stops = buildSkyGradientStops(hours, colors);
+    const stops = buildSkyGradientStops(hours, colors, twilightWm2);
     if (stops.length === 0) return;
 
     const gradient = ctx.createLinearGradient(0, 0, cssWidth, 0);
     for (const stop of stops) gradient.addColorStop(stop.offset, stop.color);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, cssWidth, cssHeight);
-  }, [hours, colors, rect]);
+  }, [hours, colors, rect, twilightWm2]);
 
   if (!rect) return null;
   return (

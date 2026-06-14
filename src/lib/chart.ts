@@ -189,11 +189,6 @@ function capitalize(value: string) {
 
 // --- Color helpers for gradient-overlap blend effect ---
 
-export function cellFill(hour: HourlyWeather, colors: CellColors): string {
-  if (!hour.isDay) return colors.night;
-  return colors[hour.kind as WeatherKind];
-}
-
 export function parseRgba(s: string): { r: number; g: number; b: number; a: number } {
   const match = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
   if (!match) return { r: 0, g: 0, b: 0, a: 1 };
@@ -205,14 +200,56 @@ export function parseRgba(s: string): { r: number; g: number; b: number; a: numb
   };
 }
 
-export function mixRgba(c1: string, c2: string): string {
+export function lerpRgba(c1: string, c2: string, t: number): string {
   const a = parseRgba(c1);
   const b = parseRgba(c2);
-  const r = Math.round((a.r + b.r) / 2);
-  const g = Math.round((a.g + b.g) / 2);
-  const bl = Math.round((a.b + b.b) / 2);
-  const alpha = Math.round(((a.a + b.a) / 2) * 100) / 100;
+  const r = Math.round(a.r + (b.r - a.r) * t);
+  const g = Math.round(a.g + (b.g - a.g) * t);
+  const bl = Math.round(a.b + (b.b - a.b) * t);
+  const alpha = Math.round((a.a + (b.a - a.a) * t) * 100) / 100;
   return `rgba(${r}, ${g}, ${bl}, ${alpha})`;
+}
+
+export function mixRgba(c1: string, c2: string): string {
+  return lerpRgba(c1, c2, 0.5);
+}
+
+// Radiation (W/m²) at or above which the sky is treated as "full day".
+// 20 W/m² sits just above civil twilight (~5 W/m²), so only the brief
+// minutes around actual sunrise/sunset are blended — overcast daytime
+// hours (typically 50–300 W/m²) keep their crisp full-day colour.
+const TWILIGHT_RADIATION_WM2 = 20;
+
+// Maps shortwave radiation to a [0, 1] sky brightness used to blend between
+// night and day colours. Using radiation instead of the binary is_day flag
+// gives a smooth, time-consistent sunset/sunrise transition: the same radiation
+// value produces the same colour regardless of which horizon view is shown.
+// Only the narrow twilight zone (0–20 W/m²) is blended; all meaningful
+// daylight reaches brightness 1 immediately.
+// Shortwave_radiation drops to 0 at sunset, but the sky stays visibly light for
+// another ~75 minutes (civil + nautical twilight). This falloff bridges that gap
+// using the precomputed sunsetMs so the gradient fades gradually instead of
+// cutting abruptly to night at the moment of sunset.
+const CIVIL_TWILIGHT_MS = 75 * 60 * 1000;
+
+export function skyBrightness(hour: HourlyWeather, twilightWm2 = TWILIGHT_RADIATION_WM2): number {
+  const radiationBrightness = Math.min(hour.radiation / twilightWm2, 1);
+  if (!hour.sunsetMs) return radiationBrightness;
+
+  const afterSunset = new Date(hour.isoTime).getTime() - hour.sunsetMs;
+  if (afterSunset >= 0 && afterSunset <= CIVIL_TWILIGHT_MS) {
+    const twilightBrightness = 1 - afterSunset / CIVIL_TWILIGHT_MS;
+    return Math.max(radiationBrightness, twilightBrightness);
+  }
+
+  return radiationBrightness;
+}
+
+export function cellFill(hour: HourlyWeather, colors: CellColors, twilightWm2 = TWILIGHT_RADIATION_WM2): string {
+  const t = skyBrightness(hour, twilightWm2);
+  if (t <= 0) return colors.night;
+  if (t >= 1) return colors[hour.kind as WeatherKind];
+  return lerpRgba(colors.night, colors[hour.kind as WeatherKind], t);
 }
 
 export type GradientStop = { offset: number; color: string };
@@ -234,11 +271,11 @@ export type GradientStop = { offset: number; color: string };
  * run of equal cells (e.g. night hours) renders as a flat fill rather than many
  * redundant interpolation points.
  */
-export function buildSkyGradientStops(hours: HourlyWeather[], colors: CellColors): GradientStop[] {
+export function buildSkyGradientStops(hours: HourlyWeather[], colors: CellColors, twilightWm2 = TWILIGHT_RADIATION_WM2): GradientStop[] {
   const n = hours.length;
   if (n === 0) return [];
 
-  const fills = hours.map((hour) => cellFill(hour, colors));
+  const fills = hours.map((hour) => cellFill(hour, colors, twilightWm2));
 
   // Full center+boundary stop list, left-to-right.
   const raw: GradientStop[] = [];

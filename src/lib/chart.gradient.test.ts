@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildSkyGradientStops, cellFill, mixRgba } from "./chart";
+import { buildSkyGradientStops, cellFill, lerpRgba, mixRgba, skyBrightness } from "./chart";
 import type { CellColors } from "../components/cellColors";
 import type { HourlyWeather, WeatherKind } from "../types";
 
@@ -11,7 +11,8 @@ const colors: CellColors = {
   night: "rgba(10, 10, 10, 0.72)",
 };
 
-function hour(kind: WeatherKind, isDay = true): HourlyWeather {
+// Default radiation: 500 W/m² for day hours (full brightness), 0 for night.
+function hour(kind: WeatherKind, isDay = true, radiation = isDay ? 500 : 0): HourlyWeather {
   return {
     isoTime: "2026-06-10T00:00:00Z",
     time: "00:00",
@@ -20,11 +21,89 @@ function hour(kind: WeatherKind, isDay = true): HourlyWeather {
     precipitationMm: 0,
     precipitationProbability: 0,
     cloudCover: 0,
-    radiation: 0,
+    radiation,
     isDay,
     kind,
   };
 }
+
+describe("skyBrightness", () => {
+  it("returns 0 for true night (radiation = 0)", () => {
+    expect(skyBrightness(hour("cloud", false, 0))).toBe(0);
+  });
+
+  it("returns 1 for any meaningful daylight (radiation >= 20 W/m²)", () => {
+    expect(skyBrightness(hour("sun", true, 20))).toBe(1);
+    expect(skyBrightness(hour("sun", true, 100))).toBe(1);
+    expect(skyBrightness(hour("sun", true, 800))).toBe(1);
+  });
+
+  it("scales linearly within the twilight zone (0–20 W/m²)", () => {
+    expect(skyBrightness(hour("sun", true, 10))).toBeCloseTo(0.5);
+    expect(skyBrightness(hour("cloud", false, 5))).toBeCloseTo(0.25);
+  });
+
+  it("produces near-zero brightness for sunset radiation (2 W/m²)", () => {
+    expect(skyBrightness(hour("sun", true, 2))).toBeCloseTo(0.1);
+  });
+
+  it("gives the same brightness for the same radiation regardless of isDay", () => {
+    // Twilight: sun just below horizon but radiation still > 0.
+    const twilightDay = hour("sun", true, 30);
+    const twilightNight = hour("cloud", false, 30);
+    expect(skyBrightness(twilightDay)).toBe(skyBrightness(twilightNight));
+  });
+
+  describe("civil twilight falloff (sunsetMs)", () => {
+    const SUNSET_MS = new Date("2026-06-14T20:00:00Z").getTime();
+
+    function hourAtOffset(minutesAfterSunset: number) {
+      const isoTime = new Date(SUNSET_MS + minutesAfterSunset * 60 * 1000).toISOString();
+      return { ...hour("cloud", false, 0), isoTime, sunsetMs: SUNSET_MS };
+    }
+
+    it("returns brightness 1 at the moment of sunset (0 min after)", () => {
+      expect(skyBrightness(hourAtOffset(0))).toBeCloseTo(1);
+    });
+
+    it("returns brightness 0.5 at 37.5 min after sunset (midpoint of 75-min window)", () => {
+      expect(skyBrightness(hourAtOffset(37.5))).toBeCloseTo(0.5);
+    });
+
+    it("returns brightness 0 at exactly 75 min after sunset", () => {
+      expect(skyBrightness(hourAtOffset(75))).toBeCloseTo(0);
+    });
+
+    it("returns 0 after twilight ends (>75 min after sunset)", () => {
+      expect(skyBrightness(hourAtOffset(90))).toBe(0);
+    });
+
+    it("returns 0 without sunsetMs even when radiation is 0 (existing behaviour)", () => {
+      expect(skyBrightness(hour("cloud", false, 0))).toBe(0);
+    });
+
+    it("uses radiation brightness when that is higher than twilight factor", () => {
+      // radiation = 500 W/m² → brightness 1; sunsetMs far in the future → twilight 0
+      const daytime = { ...hourAtOffset(-120), radiation: 500 };
+      expect(skyBrightness(daytime)).toBeCloseTo(1);
+    });
+  });
+});
+
+describe("lerpRgba", () => {
+  it("returns c1 at t=0 and c2 at t=1", () => {
+    const c1 = "rgba(0, 0, 0, 1)";
+    const c2 = "rgba(100, 200, 50, 0.5)";
+    expect(lerpRgba(c1, c2, 0)).toBe(c1);
+    expect(lerpRgba(c1, c2, 1)).toBe(c2);
+  });
+
+  it("matches mixRgba at t=0.5", () => {
+    const c1 = colors.night;
+    const c2 = colors.sun;
+    expect(lerpRgba(c1, c2, 0.5)).toBe(mixRgba(c1, c2));
+  });
+});
 
 describe("buildSkyGradientStops", () => {
   it("returns no stops for empty input", () => {
@@ -152,6 +231,26 @@ describe("buildSkyGradientStops", () => {
       expect(stops[i].offset).toBeGreaterThanOrEqual(0);
       expect(stops[i].offset).toBeLessThanOrEqual(1);
     }
+  });
+
+  it("produces a smooth twilight gradient between a sunset hour and a night hour", () => {
+    // sunset: isDay=true but radiation≈2 W/m² (just at sunset); next slot: full night
+    const sunset = hour("sun", true, 2);
+    const night = hour("cloud", false, 0);
+    const stops = buildSkyGradientStops([sunset, night], colors);
+
+    // Sunset hour should be near-night, not full sun color.
+    const sunsetCellColor = cellFill(sunset, colors);
+    expect(sunsetCellColor).not.toBe(colors.sun);
+    expect(sunsetCellColor).not.toBe(colors.night);
+
+    // Night hour must be pure night.
+    expect(cellFill(night, colors)).toBe(colors.night);
+
+    // The gradient must include both the near-night sunset color and pure night.
+    const seen = stops.map((s) => s.color);
+    expect(seen).toContain(sunsetCellColor);
+    expect(seen).toContain(colors.night);
   });
 
   it("keeps transition stops while collapsing a night run preceding daylight", () => {
