@@ -18,6 +18,15 @@
  * `setTimeout(0)`. A `scrollend` event dispatched synchronously before any
  * timer tick will be blocked by the guard. After `vi.advanceTimersByTime(0)` the
  * guard clears and subsequent scrollend events are processed normally.
+ *
+ * Suspense / act() note:
+ * DayCarousel uses React.lazy() for DayChartRecharts. Even though vi.mock()
+ * resolves the module synchronously, React's lazy machinery schedules the
+ * Suspense resolution as a microtask. The resulting state update must be
+ * captured inside act() to prevent "A suspended resource finished loading
+ * inside a test, but the event was not wrapped in act(...)" warnings.
+ * renderCarousel() therefore wraps render() in await act(async () => { ... })
+ * and all tests that call it are marked async.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -91,24 +100,33 @@ const defaultProps: DayCarouselProps = {
 /**
  * Render DayCarousel with its own isolated Jotai store so tests are independent.
  *
+ * Async because React.lazy() + Suspense resolves as a microtask even when the
+ * module is mocked. Wrapping render in await act(async () => { ... }) ensures
+ * the Suspense boundary settles before the helper returns, preventing the
+ * "A suspended resource finished loading inside a test, but the event was not
+ * wrapped in act(...)" warning.
+ *
  * Returns:
  * - `store`        — Jotai store for atom reads/writes.
  * - `container`    — the `.chart-carousel` div with offsetWidth=PANEL_WIDTH.
  * - `scrollToSpy`  — vi.fn() installed as `container.scrollTo` so the component's
  *                    smooth-scroll effect doesn't throw (jsdom divs lack scrollTo).
  */
-function renderCarousel(
+async function renderCarousel(
   props: Partial<DayCarouselProps> = {},
   initialDay: DayOption = "Vandaag",
 ) {
   const store = createStore();
   store.set(selectedDayAtom, initialDay);
 
-  const utils = render(
-    <Provider store={store}>
-      <DayCarousel {...defaultProps} {...props} />
-    </Provider>,
-  );
+  let utils!: ReturnType<typeof render>;
+  await act(async () => {
+    utils = render(
+      <Provider store={store}>
+        <DayCarousel {...defaultProps} {...props} />
+      </Provider>,
+    );
+  });
 
   const container = utils.container.querySelector<HTMLDivElement>(
     ".chart-carousel",
@@ -162,16 +180,16 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Test 1: Initial panel is Vandaag
   // -------------------------------------------------------------------------
-  it("mounts with selectedDayAtom = Vandaag when no initial day override is given", () => {
-    const { store } = renderCarousel();
+  it("mounts with selectedDayAtom = Vandaag when no initial day override is given", async () => {
+    const { store } = await renderCarousel();
     expect(store.get(selectedDayAtom)).toBe("Vandaag");
   });
 
   // -------------------------------------------------------------------------
   // Test 2: Atom change → scrollTo called with correct left offset
   // -------------------------------------------------------------------------
-  it("calls scrollTo({ left: width * 1, behavior: smooth }) when atom changes to Morgen", () => {
-    const { store, scrollToSpy } = renderCarousel();
+  it("calls scrollTo({ left: width * 1, behavior: smooth }) when atom changes to Morgen", async () => {
+    const { store, scrollToSpy } = await renderCarousel();
 
     act(() => {
       store.set(selectedDayAtom, "Morgen");
@@ -187,8 +205,8 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Test 3: User swipe → scrollend event → atom updated
   // -------------------------------------------------------------------------
-  it("updates selectedDayAtom to Overmorgen after the user swipes to panel 2", () => {
-    const { store, container } = renderCarousel();
+  it("updates selectedDayAtom to Overmorgen after the user swipes to panel 2", async () => {
+    const { store, container } = await renderCarousel();
 
     // Flush the mount-time guard (useLayoutEffect sets isScrollingProgrammatically=true,
     // schedules setTimeout(0) to clear it).
@@ -213,8 +231,8 @@ describe("DayCarousel", () => {
   // notifications, while a different-day settle produces exactly one. This proves
   // the redundant write is skipped without inspecting React-internal renders.
   // -------------------------------------------------------------------------
-  it("does NOT write the atom when a swipe settles on the already-selected day", () => {
-    const { store, container } = renderCarousel({}, "Overmorgen");
+  it("does NOT write the atom when a swipe settles on the already-selected day", async () => {
+    const { store, container } = await renderCarousel({}, "Overmorgen");
 
     act(() => { vi.runAllTimers(); }); // flush mount guard
 
@@ -241,8 +259,8 @@ describe("DayCarousel", () => {
   // Test 4: isScrollingProgrammatically guard — blocks scrollend during
   // a programmatic scroll before the clearing setTimeout fires
   // -------------------------------------------------------------------------
-  it("ignores a scrollend fired synchronously during a programmatic scroll", () => {
-    const { store, container } = renderCarousel();
+  it("ignores a scrollend fired synchronously during a programmatic scroll", async () => {
+    const { store, container } = await renderCarousel();
 
     // Flush mount-time guard so we start from a clean state.
     act(() => {
@@ -271,8 +289,8 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Test 5: loading state — 4 loading panels rendered
   // -------------------------------------------------------------------------
-  it("renders 4 loading-panels when isLoading is true", () => {
-    const { container } = renderCarousel({ isLoading: true });
+  it("renders 4 loading-panels when isLoading is true", async () => {
+    const { container } = await renderCarousel({ isLoading: true });
 
     const panels = container.querySelectorAll(".loading-panel");
     expect(panels).toHaveLength(4);
@@ -281,8 +299,8 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Test 6: error state — shows Dutch error message in every panel
   // -------------------------------------------------------------------------
-  it('shows "Weerdata niet beschikbaar" in every panel when isError is true', () => {
-    renderCarousel({ isError: true });
+  it('shows "Weerdata niet beschikbaar" in every panel when isError is true', async () => {
+    await renderCarousel({ isError: true });
 
     const messages = screen.getAllByText("Weerdata niet beschikbaar");
     expect(messages).toHaveLength(4);
@@ -291,9 +309,9 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Test 6b: error state — retry button calls onRetry (recovery affordance)
   // -------------------------------------------------------------------------
-  it("renders a retry button in the error state that calls onRetry when clicked", () => {
+  it("renders a retry button in the error state that calls onRetry when clicked", async () => {
     const onRetry = vi.fn();
-    renderCarousel({ isError: true, onRetry });
+    await renderCarousel({ isError: true, onRetry });
 
     const buttons = screen.getAllByRole("button", { name: "Opnieuw proberen" });
     expect(buttons).toHaveLength(4);
@@ -304,16 +322,16 @@ describe("DayCarousel", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("renders no retry button when isError is true but onRetry is not provided", () => {
-    renderCarousel({ isError: true });
+  it("renders no retry button when isError is true but onRetry is not provided", async () => {
+    await renderCarousel({ isError: true });
     expect(screen.queryByRole("button", { name: "Opnieuw proberen" })).toBeNull();
   });
 
   // -------------------------------------------------------------------------
   // Extra: happy path — chart stubs render (no loading panels)
   // -------------------------------------------------------------------------
-  it("renders 4 chart panels (not loading-panels) when data is available", () => {
-    const { container } = renderCarousel();
+  it("renders 4 chart panels (not loading-panels) when data is available", async () => {
+    const { container } = await renderCarousel();
 
     const charts = screen.getAllByTestId("chart-stub");
     expect(charts).toHaveLength(dayOptions.length); // 4
@@ -323,8 +341,8 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Extra: all 4 panels always in DOM regardless of selected day
   // -------------------------------------------------------------------------
-  it("keeps all 4 carousel panels in the DOM when starting on Overmorgen", () => {
-    const { container } = renderCarousel({}, "Overmorgen");
+  it("keeps all 4 carousel panels in the DOM when starting on Overmorgen", async () => {
+    const { container } = await renderCarousel({}, "Overmorgen");
 
     const panels = container.querySelectorAll(".chart-carousel-panel");
     expect(panels).toHaveLength(4);
@@ -333,8 +351,8 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Extra: atom change to Week calls scrollTo with index 3
   // -------------------------------------------------------------------------
-  it("calls scrollTo({ left: width * 3 }) when atom changes to Week", () => {
-    const { store, scrollToSpy } = renderCarousel();
+  it("calls scrollTo({ left: width * 3 }) when atom changes to Week", async () => {
+    const { store, scrollToSpy } = await renderCarousel();
 
     act(() => {
       store.set(selectedDayAtom, "Week");
@@ -349,8 +367,8 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Extra: guard clears after setTimeout(0) — subsequent scrollend is processed
   // -------------------------------------------------------------------------
-  it("processes a scrollend that arrives after the guard-clearing setTimeout fires", () => {
-    const { store, container } = renderCarousel();
+  it("processes a scrollend that arrives after the guard-clearing setTimeout fires", async () => {
+    const { store, container } = await renderCarousel();
 
     // Flush mount guard.
     act(() => { vi.runAllTimers(); });
@@ -372,8 +390,8 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Extra: Overmorgen atom change calls scrollTo with index 2
   // -------------------------------------------------------------------------
-  it("calls scrollTo({ left: width * 2 }) when atom changes to Overmorgen", () => {
-    const { store, scrollToSpy } = renderCarousel();
+  it("calls scrollTo({ left: width * 2 }) when atom changes to Overmorgen", async () => {
+    const { store, scrollToSpy } = await renderCarousel();
 
     act(() => {
       store.set(selectedDayAtom, "Overmorgen");
@@ -389,9 +407,9 @@ describe("DayCarousel", () => {
   // onScrollFractionChange — fraction callback
   // -------------------------------------------------------------------------
 
-  it("calls onScrollFractionChange(0.5) when scrollLeft is halfway between Vandaag and Morgen", () => {
+  it("calls onScrollFractionChange(0.5) when scrollLeft is halfway between Vandaag and Morgen", async () => {
     const onScrollFractionChange = vi.fn();
-    const { container } = renderCarousel({ onScrollFractionChange });
+    const { container } = await renderCarousel({ onScrollFractionChange });
 
     act(() => { vi.runAllTimers(); }); // flush mount guard
 
@@ -411,9 +429,9 @@ describe("DayCarousel", () => {
     );
   });
 
-  it("calls onScrollFractionChange(1) when scrollLeft is at the last panel (Week)", () => {
+  it("calls onScrollFractionChange(1) when scrollLeft is at the last panel (Week)", async () => {
     const onScrollFractionChange = vi.fn();
-    const { container } = renderCarousel({ onScrollFractionChange });
+    const { container } = await renderCarousel({ onScrollFractionChange });
 
     act(() => { vi.runAllTimers(); });
 
@@ -425,9 +443,9 @@ describe("DayCarousel", () => {
     expect(onScrollFractionChange).toHaveBeenCalledWith(1);
   });
 
-  it("calls onScrollFractionChange(0) when scrollLeft is at the first panel (Vandaag)", () => {
+  it("calls onScrollFractionChange(0) when scrollLeft is at the first panel (Vandaag)", async () => {
     const onScrollFractionChange = vi.fn();
-    const { container } = renderCarousel({ onScrollFractionChange });
+    const { container } = await renderCarousel({ onScrollFractionChange });
 
     act(() => { vi.runAllTimers(); });
 
@@ -438,9 +456,9 @@ describe("DayCarousel", () => {
     expect(onScrollFractionChange).toHaveBeenCalledWith(0);
   });
 
-  it("clamps onScrollFractionChange to [0, 1] for out-of-bounds scrollLeft", () => {
+  it("clamps onScrollFractionChange to [0, 1] for out-of-bounds scrollLeft", async () => {
     const onScrollFractionChange = vi.fn();
-    const { container } = renderCarousel({ onScrollFractionChange });
+    const { container } = await renderCarousel({ onScrollFractionChange });
 
     act(() => { vi.runAllTimers(); });
 
@@ -458,8 +476,8 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // onScrollFractionChange absent — no throw when scrolling
   // -------------------------------------------------------------------------
-  it("does not throw when scroll event fires and onScrollFractionChange is not provided", () => {
-    const { container } = renderCarousel(); // no onScrollFractionChange
+  it("does not throw when scroll event fires and onScrollFractionChange is not provided", async () => {
+    const { container } = await renderCarousel(); // no onScrollFractionChange
 
     act(() => { vi.runAllTimers(); });
 
@@ -471,9 +489,9 @@ describe("DayCarousel", () => {
   // -------------------------------------------------------------------------
   // Fraction callback not called when containerWidth is 0
   // -------------------------------------------------------------------------
-  it("calls onScrollFractionChange(0) (safe fallback) when containerWidth is 0", () => {
+  it("calls onScrollFractionChange(0) (safe fallback) when containerWidth is 0", async () => {
     const onScrollFractionChange = vi.fn();
-    const { container } = renderCarousel({ onScrollFractionChange });
+    const { container } = await renderCarousel({ onScrollFractionChange });
 
     act(() => { vi.runAllTimers(); });
 
@@ -508,8 +526,8 @@ describe("DayCarousel", () => {
   // debounce fires after unmount by checking no error is thrown (the current
   // behavior). Future fix: move clearTimeout to both branches.
   // -------------------------------------------------------------------------
-  it("debounce timer set during scroll does not throw after unmount (regression guard for cleanup bug)", () => {
-    const { container, unmount } = renderCarousel();
+  it("debounce timer set during scroll does not throw after unmount (regression guard for cleanup bug)", async () => {
+    const { container, unmount } = await renderCarousel();
 
     act(() => { vi.runAllTimers(); });
 

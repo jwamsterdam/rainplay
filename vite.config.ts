@@ -29,13 +29,25 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
 
         // Cache alle Vite-gebouwde assets (JS, CSS, afbeeldingen).
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+        globPatterns: ["**/*.{js,css,html,ico,svg,webmanifest}"],
 
         // API-calls naar Open-Meteo: probeer het netwerk eerst, maar val terug
         // op de laatst gecachte forecast als het netwerk traag is of faalt
         // (Open-Meteo throttelt zware requests soms tot tientallen seconden).
         // Voor een vakantie-weerapp is licht-verouderde data beter dan niets.
         runtimeCaching: [
+          {
+            urlPattern: /\/assets\/weather-hero\.(avif|webp|jpg)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "hero-images",
+              expiration: {
+                maxEntries: 3,
+                maxAgeSeconds: 30 * 24 * 60 * 60,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: /^https:\/\/api\.open-meteo\.com\//,
             handler: "NetworkFirst",

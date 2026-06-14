@@ -39,7 +39,8 @@ describe("iOS viewport fill contract", () => {
     const stylesCss = readProjectFile("src/styles.css");
 
     const htmlRule = ruleBlock(stylesCss, "html");
-    expect(htmlRule).toContain('url("/assets/weather-hero.png")');
+    expect(htmlRule).toContain("image-set");
+    expect(htmlRule).toContain("weather-hero.avif");
     expect(htmlRule).toContain("background-attachment: fixed");
 
     const appShellRule = ruleBlock(stylesCss, ".app-shell");
@@ -69,7 +70,8 @@ describe("iOS viewport fill contract", () => {
     const desktopAppShellRule = ruleBlock(stylesCss, ".app-shell", desktopMediaIndex);
     expect(desktopAppShellRule).toContain("position: relative");
     expect(desktopAppShellRule).toContain("inset: auto");
-    expect(desktopAppShellRule).toContain('url("/assets/weather-hero.png")');
+    expect(desktopAppShellRule).toContain("image-set");
+    expect(desktopAppShellRule).toContain("weather-hero.avif");
   });
 
   it("keeps cold-launch viewport diagnostics wired into startup and settings", () => {

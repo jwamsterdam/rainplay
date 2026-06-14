@@ -28,7 +28,11 @@ html {
      are applied per-element (.weather-hero top, .decision-sheet bottom). */
   padding: 0;
   overflow: hidden;
-  background: var(--color-surface-solid) url("/assets/weather-hero.png");
+  background: var(--color-surface-solid) image-set(
+    url("/assets/weather-hero.avif") type("image/avif"),
+    url("/assets/weather-hero.webp") type("image/webp"),
+    url("/assets/weather-hero.jpg") type("image/jpeg")
+  );
   background-position: center top;
   background-size: cover;
   background-repeat: no-repeat;
@@ -868,7 +872,11 @@ button {
     border: 1px solid rgba(203, 213, 225, 0.78);
     border-radius: 34px;
     box-shadow: var(--shadow-device);
-    background: var(--color-surface-solid) url("/assets/weather-hero.png") center top / cover no-repeat;
+    background: var(--color-surface-solid) image-set(
+      url("/assets/weather-hero.avif") type("image/avif"),
+      url("/assets/weather-hero.webp") type("image/webp"),
+      url("/assets/weather-hero.jpg") type("image/jpeg")
+    ) center top / cover no-repeat;
   }
 
   .weather-hero {
