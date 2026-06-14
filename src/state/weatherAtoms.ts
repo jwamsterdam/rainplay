@@ -49,3 +49,7 @@ dataTimestampAtom.debugLabel = "dataTimestampAtom";
 // true als browser geen netwerk heeft
 export const isOfflineAtom = atom<boolean>(false);
 isOfflineAtom.debugLabel = "isOfflineAtom";
+
+// W/m² drempel waaronder de schemering-blend actief is (instelbaar via Settings-slider).
+export const twilightRadiationAtom = atom(20);
+twilightRadiationAtom.debugLabel = "twilightRadiationAtom";

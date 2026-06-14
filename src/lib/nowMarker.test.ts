@@ -1,19 +1,20 @@
 /**
  * nowFraction — behavior-oriented unit tests.
  *
- * THE BUG THIS FILE GUARDS AGAINST
- * --------------------------------
- * The dashed "nu" marker vanished on the "+6 uur" / "+2 uur" Vandaag charts.
- * Those horizon windows begin at the first :00/:30 point AT/AFTER now, so the
+ * THE BUGS THIS FILE GUARDS AGAINST
+ * ----------------------------------
+ * Bug 1 (original): The dashed "nu" marker vanished on "+6 uur" / "+2 uur"
+ * windows. Those windows begin at the first :00/:30 AT/AFTER now, so the
  * current wall-clock time sits just BEFORE the first visible point. The old
- * `nowLineX` returned null whenever now fell outside [firstPoint, lastPoint],
- * so the marker disappeared exactly when the window was "the next few hours".
+ * `nowLineX` returned null → marker disappeared. `nowFraction` replaces that
+ * with the band-centre model clamped to [0,1] so the marker always renders.
  *
- * `nowFraction` replaces that with the band-centre model the sky gradient uses:
- * point i's centre is at (i + 0.5)/n. The result is a fraction in [0,1],
- * CLAMPED to the edges (pinned left when now precedes the window, right when
- * after), and is null ONLY for a degenerate input (< 2 points). `now` is
- * injected so the math is deterministic.
+ * Bug 2 (midnight): When a +6 uur window crosses midnight (e.g. 23:00 → 04:30
+ * next day) the old HH:MM minutes-since-midnight comparison was non-monotonic:
+ * mins=[1380, 1410, 0, 30, …]. The while-loop advanced i all the way to n-2
+ * (because 0, 30, … < nowMin=1400), clamping fraction to 1 → marker pinned to
+ * the right edge. Fixed by switching to isoTime (includes date) so the
+ * timestamp array is strictly monotonic across midnight.
  *
  * The math is the whole contract, so these tests pin the exact denominators and
  * the +0.5 band-centre offset — that's where an off-by-one or wrong-denominator
@@ -23,16 +24,29 @@
 import { describe, it, expect } from "vitest";
 import { nowFraction } from "./nowMarker";
 
-// Build a points array from "HH:MM" strings (only `time` is read).
+// Build a points array from "HH:MM" strings, assigning correct dates so
+// cross-midnight sequences (e.g. "23:30", "0:00") get the right calendar day.
 function pts(...times: string[]) {
-  return times.map((time) => ({ time }));
+  let dayOffset = 0;
+  let prevMin = -Infinity;
+  return times.map((time) => {
+    const [h = "0", m = "0"] = time.split(":");
+    const min = parseInt(h, 10) * 60 + parseInt(m, 10);
+    if (min < prevMin) dayOffset++; // midnight crossing detected
+    prevMin = min;
+    const day = 11 + dayOffset;
+    // Always use two-digit HH:MM so new Date() parses as valid ISO 8601.
+    const hh = h.padStart(2, "0");
+    const mm = m.padStart(2, "0");
+    return { isoTime: `2026-06-${String(day).padStart(2, "0")}T${hh}:${mm}` };
+  });
 }
 
-// Deterministic clock at HH:MM on a fixed date (2026-06-11). The date part is
-// irrelevant — nowFraction only reads getHours()/getMinutes() — but fixing it
-// documents the determinism contract.
-function at(hours: number, minutes = 0) {
-  return new Date(2026, 5, 11, hours, minutes);
+// Deterministic clock at HH:MM on a fixed date (2026-06-11, or +dayOffset days).
+// dayOffset=1 → June 12, used for times that fall after midnight in a
+// cross-midnight window.
+function at(hours: number, minutes = 0, dayOffset = 0) {
+  return new Date(2026, 5, 11 + dayOffset, hours, minutes);
 }
 
 describe("nowFraction", () => {
@@ -147,7 +161,7 @@ describe("nowFraction", () => {
   });
 
   // -------------------------------------------------------------------------
-  // DIRECT REGRESSION GUARDS — the two windows the bug broke.
+  // DIRECT REGRESSION GUARDS — the two windows the original bug broke.
   // -------------------------------------------------------------------------
   describe("regression guards: marker WOULD render on the broken windows", () => {
     it('"+2 uur" — 8 fifteen-min points starting just after now → left-pinned 0 (marker renders)', () => {
@@ -170,6 +184,44 @@ describe("nowFraction", () => {
       // now=12:00 == point index 12 → (12 + 0.5)/24 = 12.5/24 ≈ 0.5208
       expect(f).toBeCloseTo(12.5 / 24, 10);
       expect(f! > 0 && f! < 1).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // MIDNIGHT CROSSING — regression for Bug 2.
+  // A +6 uur window runs from e.g. 23:00 to 04:30 the next day.
+  // The HH:MM approach broke here: mins=[1380,1410,0,30,...] is non-monotonic,
+  // so the while-loop advanced i to n-2 → fraction clamped to 1 (marker at end).
+  // -------------------------------------------------------------------------
+  describe("midnight crossing: +6 uur window spanning two calendar days", () => {
+    // 12-point window: 23:00,23:30 on day 1, then 0:00..4:30 on day 2.
+    const crossMidnightWindow = pts(
+      "23:00", "23:30",
+      "0:00", "0:30", "1:00", "1:30",
+      "2:00", "2:30", "3:00", "3:30",
+      "4:00", "4:30",
+    );
+
+    it("places now near the start when now is 20 min into the first slot", () => {
+      // now=23:20 → between pt0 (23:00) and pt1 (23:30), t=20/30=0.667
+      // fraction = (0 + 0.5 + 0.667) / 12 ≈ 0.097
+      const f = nowFraction(crossMidnightWindow, at(23, 20));
+      expect(f).toBeCloseTo((0.5 + 20 / 30) / 12, 5);
+    });
+
+    it("does NOT pin to the right edge when now is 0:30 on the next day (the midnight bug)", () => {
+      // The broken HH:MM logic treated 0:30 (30 min) < 23:00 (1380 min) and
+      // advanced i to n-2 → fraction=1. Correct: 0:30 is point index 3.
+      // fraction = (3 + 0.5) / 12 ≈ 0.292
+      const f = nowFraction(crossMidnightWindow, at(0, 30, 1)); // June 12 00:30
+      expect(f).not.toBe(1);
+      expect(f).toBeCloseTo(3.5 / 12, 5);
+    });
+
+    it("places now at band-centre of last point when now equals last point", () => {
+      // now=04:30 on day 2 → index 11, fraction = (11 + 0.5)/12 ≈ 0.958
+      const f = nowFraction(crossMidnightWindow, at(4, 30, 1));
+      expect(f).toBeCloseTo(11.5 / 12, 5);
     });
   });
 });

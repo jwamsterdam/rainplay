@@ -53,6 +53,41 @@ describe("skyBrightness", () => {
     const twilightNight = hour("cloud", false, 30);
     expect(skyBrightness(twilightDay)).toBe(skyBrightness(twilightNight));
   });
+
+  describe("civil twilight falloff (sunsetMs)", () => {
+    const SUNSET_MS = new Date("2026-06-14T20:00:00Z").getTime();
+
+    function hourAtOffset(minutesAfterSunset: number) {
+      const isoTime = new Date(SUNSET_MS + minutesAfterSunset * 60 * 1000).toISOString();
+      return { ...hour("cloud", false, 0), isoTime, sunsetMs: SUNSET_MS };
+    }
+
+    it("returns brightness 1 at the moment of sunset (0 min after)", () => {
+      expect(skyBrightness(hourAtOffset(0))).toBeCloseTo(1);
+    });
+
+    it("returns brightness 0.5 at 37.5 min after sunset (midpoint of 75-min window)", () => {
+      expect(skyBrightness(hourAtOffset(37.5))).toBeCloseTo(0.5);
+    });
+
+    it("returns brightness 0 at exactly 75 min after sunset", () => {
+      expect(skyBrightness(hourAtOffset(75))).toBeCloseTo(0);
+    });
+
+    it("returns 0 after twilight ends (>75 min after sunset)", () => {
+      expect(skyBrightness(hourAtOffset(90))).toBe(0);
+    });
+
+    it("returns 0 without sunsetMs even when radiation is 0 (existing behaviour)", () => {
+      expect(skyBrightness(hour("cloud", false, 0))).toBe(0);
+    });
+
+    it("uses radiation brightness when that is higher than twilight factor", () => {
+      // radiation = 500 W/m² → brightness 1; sunsetMs far in the future → twilight 0
+      const daytime = { ...hourAtOffset(-120), radiation: 500 };
+      expect(skyBrightness(daytime)).toBeCloseTo(1);
+    });
+  });
 });
 
 describe("lerpRgba", () => {

@@ -226,12 +226,27 @@ const TWILIGHT_RADIATION_WM2 = 20;
 // value produces the same colour regardless of which horizon view is shown.
 // Only the narrow twilight zone (0–20 W/m²) is blended; all meaningful
 // daylight reaches brightness 1 immediately.
-export function skyBrightness(hour: HourlyWeather): number {
-  return Math.min(hour.radiation / TWILIGHT_RADIATION_WM2, 1);
+// Shortwave_radiation drops to 0 at sunset, but the sky stays visibly light for
+// another ~75 minutes (civil + nautical twilight). This falloff bridges that gap
+// using the precomputed sunsetMs so the gradient fades gradually instead of
+// cutting abruptly to night at the moment of sunset.
+const CIVIL_TWILIGHT_MS = 75 * 60 * 1000;
+
+export function skyBrightness(hour: HourlyWeather, twilightWm2 = TWILIGHT_RADIATION_WM2): number {
+  const radiationBrightness = Math.min(hour.radiation / twilightWm2, 1);
+  if (!hour.sunsetMs) return radiationBrightness;
+
+  const afterSunset = new Date(hour.isoTime).getTime() - hour.sunsetMs;
+  if (afterSunset >= 0 && afterSunset <= CIVIL_TWILIGHT_MS) {
+    const twilightBrightness = 1 - afterSunset / CIVIL_TWILIGHT_MS;
+    return Math.max(radiationBrightness, twilightBrightness);
+  }
+
+  return radiationBrightness;
 }
 
-export function cellFill(hour: HourlyWeather, colors: CellColors): string {
-  const t = skyBrightness(hour);
+export function cellFill(hour: HourlyWeather, colors: CellColors, twilightWm2 = TWILIGHT_RADIATION_WM2): string {
+  const t = skyBrightness(hour, twilightWm2);
   if (t <= 0) return colors.night;
   if (t >= 1) return colors[hour.kind as WeatherKind];
   return lerpRgba(colors.night, colors[hour.kind as WeatherKind], t);
@@ -256,11 +271,11 @@ export type GradientStop = { offset: number; color: string };
  * run of equal cells (e.g. night hours) renders as a flat fill rather than many
  * redundant interpolation points.
  */
-export function buildSkyGradientStops(hours: HourlyWeather[], colors: CellColors): GradientStop[] {
+export function buildSkyGradientStops(hours: HourlyWeather[], colors: CellColors, twilightWm2 = TWILIGHT_RADIATION_WM2): GradientStop[] {
   const n = hours.length;
   if (n === 0) return [];
 
-  const fills = hours.map((hour) => cellFill(hour, colors));
+  const fills = hours.map((hour) => cellFill(hour, colors, twilightWm2));
 
   // Full center+boundary stop list, left-to-right.
   const raw: GradientStop[] = [];

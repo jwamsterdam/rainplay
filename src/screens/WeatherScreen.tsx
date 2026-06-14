@@ -90,6 +90,7 @@ export function WeatherScreen() {
   }, []);
 
   return (
+    <div className="screen-layout">
     <main className="app-shell">
       <OfflineBanner />
       <section className="weather-hero" aria-label="Huidig weer">
@@ -158,21 +159,23 @@ export function WeatherScreen() {
         <p className="attribution">Weather data by Open-Meteo</p>
       </section>
 
-      {settingsOpen && (
-        <Suspense fallback={null}>
-          <SettingsPanel
-            colors={cellColors}
-            onColorsChange={setCellColors}
-            showTemp={showTemp}
-            showRain={showRain}
-            showIcons={showIcons}
-            onShowTempChange={setShowTemp}
-            onShowRainChange={setShowRain}
-            onShowIconsChange={setShowIcons}
-            onClose={() => setSettingsOpen(false)}
-          />
-        </Suspense>
-      )}
     </main>
+
+    {settingsOpen && (
+      <Suspense fallback={null}>
+        <SettingsPanel
+          colors={cellColors}
+          onColorsChange={setCellColors}
+          showTemp={showTemp}
+          showRain={showRain}
+          showIcons={showIcons}
+          onShowTempChange={setShowTemp}
+          onShowRainChange={setShowRain}
+          onShowIconsChange={setShowIcons}
+          onClose={() => setSettingsOpen(false)}
+        />
+      </Suspense>
+    )}
+    </div>
   );
 }
