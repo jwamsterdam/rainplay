@@ -189,11 +189,6 @@ function capitalize(value: string) {
 
 // --- Color helpers for gradient-overlap blend effect ---
 
-export function cellFill(hour: HourlyWeather, colors: CellColors): string {
-  if (!hour.isDay) return colors.night;
-  return colors[hour.kind as WeatherKind];
-}
-
 export function parseRgba(s: string): { r: number; g: number; b: number; a: number } {
   const match = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
   if (!match) return { r: 0, g: 0, b: 0, a: 1 };
@@ -205,14 +200,39 @@ export function parseRgba(s: string): { r: number; g: number; b: number; a: numb
   };
 }
 
-export function mixRgba(c1: string, c2: string): string {
+export function lerpRgba(c1: string, c2: string, t: number): string {
   const a = parseRgba(c1);
   const b = parseRgba(c2);
-  const r = Math.round((a.r + b.r) / 2);
-  const g = Math.round((a.g + b.g) / 2);
-  const bl = Math.round((a.b + b.b) / 2);
-  const alpha = Math.round(((a.a + b.a) / 2) * 100) / 100;
+  const r = Math.round(a.r + (b.r - a.r) * t);
+  const g = Math.round(a.g + (b.g - a.g) * t);
+  const bl = Math.round(a.b + (b.b - a.b) * t);
+  const alpha = Math.round((a.a + (b.a - a.a) * t) * 100) / 100;
   return `rgba(${r}, ${g}, ${bl}, ${alpha})`;
+}
+
+export function mixRgba(c1: string, c2: string): string {
+  return lerpRgba(c1, c2, 0.5);
+}
+
+// Radiation (W/m²) at or above which the sky is considered "full day".
+// 100 W/m² is well above civil twilight (~5–20 W/m²) but easily reached by an
+// overcast Dutch summer day, so sunset hours naturally fade to near-night while
+// overcast daytime hours remain visibly bright.
+const FULL_DAY_RADIATION_WM2 = 100;
+
+// Maps shortwave radiation to a [0, 1] sky brightness used to blend between
+// night and day colours. Using radiation instead of the binary is_day flag
+// gives a smooth, time-consistent sunset/sunrise transition: the same radiation
+// value produces the same colour regardless of which horizon view is shown.
+export function skyBrightness(hour: HourlyWeather): number {
+  return Math.min(hour.radiation / FULL_DAY_RADIATION_WM2, 1);
+}
+
+export function cellFill(hour: HourlyWeather, colors: CellColors): string {
+  const t = skyBrightness(hour);
+  if (t <= 0) return colors.night;
+  if (t >= 1) return colors[hour.kind as WeatherKind];
+  return lerpRgba(colors.night, colors[hour.kind as WeatherKind], t);
 }
 
 export type GradientStop = { offset: number; color: string };
