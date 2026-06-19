@@ -1,20 +1,9 @@
 import type { ForecastLocation } from "./openMeteo";
+import { GeocodingResponseSchema, type GeocodingResponse } from "./schemas/geocodingSchema";
 
 // Free, key-less geocoding via Open-Meteo (same provider as the forecast).
 // Returns multiple candidates so the location field can show autocomplete
 // suggestions. See https://open-meteo.com/en/docs/geocoding-api
-
-type GeocodingResult = {
-  id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  country?: string;
-};
-
-type GeocodingResponse = {
-  results?: GeocodingResult[];
-};
 
 const SEARCH_URL = "https://geocoding-api.open-meteo.com/v1/search";
 
@@ -36,7 +25,12 @@ export async function searchLocations(query: string, signal?: AbortSignal): Prom
     throw new Error(`Geocoding request failed with status ${response.status}`);
   }
 
-  const data = (await response.json()) as GeocodingResponse;
+  let data: GeocodingResponse;
+  try {
+    data = GeocodingResponseSchema.parse(await response.json());
+  } catch {
+    throw new Error("Geocoding response heeft een onverwachte structuur");
+  }
   if (!data.results) return [];
 
   return data.results.map((result) => ({

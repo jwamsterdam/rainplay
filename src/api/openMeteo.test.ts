@@ -257,6 +257,65 @@ describe("fetchOpenMeteoForecast — HTTP errors", () => {
 // The tests below use fake timers + a fetch that respects AbortSignal so they
 // are deterministic and do not depend on wall-clock time.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Zod validation — structural error surfacing
+// ---------------------------------------------------------------------------
+describe("fetchOpenMeteoForecast — Zod validation error path", () => {
+  it("throws a plain Error (not a ZodError) with a Dutch message when the response has an unexpected structure", async () => {
+    // Structurally invalid payload: missing all required keys.
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse({})));
+
+    await expect(fetchOpenMeteoForecast(LOCATION)).rejects.toThrow(
+      "Open-Meteo response heeft een onverwachte structuur",
+    );
+  });
+
+  it("does not leak a ZodError directly — the thrown error is a plain Error", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse({})));
+
+    let caughtError: unknown;
+    try {
+      await fetchOpenMeteoForecast(LOCATION);
+    } catch (e) {
+      caughtError = e;
+    }
+
+    expect(caughtError).toBeInstanceOf(Error);
+    // ZodError has a `.issues` array — a plain Error must not have one.
+    expect(caughtError).not.toHaveProperty("issues");
+  });
+
+  it("throws the validation error even when the payload is a valid JSON array (wrong root type)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse([])));
+
+    await expect(fetchOpenMeteoForecast(LOCATION)).rejects.toThrow(
+      "Open-Meteo response heeft een onverwachte structuur",
+    );
+  });
+
+  it("throws the validation error when current.temperature_2m is a string", async () => {
+    const badPayload = makePayload({
+      current: { ...makePayload().current, temperature_2m: "18.6" },
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse(badPayload)));
+
+    await expect(fetchOpenMeteoForecast(LOCATION)).rejects.toThrow(
+      "Open-Meteo response heeft een onverwachte structuur",
+    );
+  });
+
+  it("still succeeds when minutely_15 is absent (optional field — not a validation error)", async () => {
+    const payload = makePayload();
+    delete (payload as Record<string, unknown>).minutely_15;
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse(payload)));
+
+    const forecast = await fetchOpenMeteoForecast(LOCATION);
+
+    expect(forecast.minutely15).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 describe("fetchOpenMeteoForecast — timeout / abort contract", () => {
   beforeEach(() => {
     vi.useFakeTimers();

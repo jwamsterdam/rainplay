@@ -274,6 +274,69 @@ describe("searchLocations — result normalization", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Zod validation — structural error surfacing
+// ---------------------------------------------------------------------------
+
+describe("searchLocations — Zod validation error path", () => {
+  it("throws a plain Error with a Dutch message when results is a string instead of an array", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => okResponse({ results: "geen array" })),
+    );
+
+    await expect(searchLocations("Haarlem")).rejects.toThrow(
+      "Geocoding response heeft een onverwachte structuur",
+    );
+  });
+
+  it("does not leak a ZodError directly — the thrown error is a plain Error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => okResponse({ results: "geen array" })),
+    );
+
+    let caughtError: unknown;
+    try {
+      await searchLocations("Haarlem");
+    } catch (e) {
+      caughtError = e;
+    }
+
+    expect(caughtError).toBeInstanceOf(Error);
+    // ZodError has a `.issues` array — a plain Error must not have one.
+    expect(caughtError).not.toHaveProperty("issues");
+  });
+
+  it("throws the validation error when a result entry is missing a required field (id)", async () => {
+    const payloadMissingId = {
+      results: [{ name: "Haarlem", latitude: 52.387, longitude: 4.645 }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse(payloadMissingId)));
+
+    await expect(searchLocations("Haarlem")).rejects.toThrow(
+      "Geocoding response heeft een onverwachte structuur",
+    );
+  });
+
+  it("throws the validation error when latitude in a result is a string", async () => {
+    const payloadBadType = {
+      results: [{ id: 1, name: "Haarlem", latitude: "52.387", longitude: 4.645 }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse(payloadBadType)));
+
+    await expect(searchLocations("Haarlem")).rejects.toThrow(
+      "Geocoding response heeft een onverwachte structuur",
+    );
+  });
+
+  it("still succeeds and returns [] when results is absent (optional field — valid schema)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse({})));
+
+    expect(await searchLocations("Haarlem")).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // AbortSignal forwarding
 // ---------------------------------------------------------------------------
 

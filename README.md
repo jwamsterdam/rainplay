@@ -215,6 +215,7 @@ Recommended:
 - PWA manifest
 - Jotai for client/UI state
 - TanStack Query for weather API/server state
+- Zod for runtime API response validation
 - CSS modules or plain CSS, depending on project size
 - Open-Meteo API
 - Browser geolocation API
@@ -227,6 +228,7 @@ Keep dependencies light. For the chart, prefer a custom SVG/CSS implementation f
 - `src/state/` contains client state atoms such as selected day, horizon, and location.
 - `src/queries/` contains React Query hooks.
 - `src/api/` contains external API adapters, starting with Open-Meteo.
+- `src/api/schemas/` contains Zod schemas for Open-Meteo API responses. All `response.json()` calls are validated here before normalisation. Types are derived via `z.infer<>` — there are no parallel handwritten types.
 - `src/design/tokens.css` contains design tokens for color, radius, spacing, shadows, and typography.
 - `src/screens/WeatherScreen.tsx` owns the first product screen.
 

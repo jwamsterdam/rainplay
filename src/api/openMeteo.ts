@@ -1,5 +1,7 @@
 import type { ForecastPoint, HourlyWeather, WeatherKind } from "../types";
 import { outdoorScore } from "../lib/outdoorScore";
+import { OpenMeteoResponseSchema } from "./schemas/openMeteoSchema";
+import type { OpenMeteoResponse } from "./schemas/openMeteoSchema";
 
 export type ForecastLocation = {
   id?: string;
@@ -20,51 +22,6 @@ export type Forecast = {
   // date string (YYYY-MM-DD) → time string (HH:MM)
   sunriseTimes: Record<string, string>;
   sunsetTimes: Record<string, string>;
-};
-
-type OpenMeteoResponse = {
-  daily: {
-    time: string[];
-    sunrise: string[];
-    sunset: string[];
-  };
-  current: {
-    temperature_2m: number;
-    apparent_temperature: number;
-    precipitation: number;
-    rain: number;
-    showers: number;
-    weather_code: number;
-    cloud_cover: number;
-    wind_speed_10m: number;
-    wind_gusts_10m: number;
-  };
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    apparent_temperature: number[];
-    precipitation: number[];
-    precipitation_probability: number[];
-    rain: number[];
-    showers: number[];
-    cloud_cover: number[];
-    shortwave_radiation: number[];
-    sunshine_duration: number[];
-    weather_code: number[];
-    wind_speed_10m: number[];
-    wind_gusts_10m: number[];
-    is_day: number[];
-  };
-  minutely_15?: {
-    time: string[];
-    precipitation: number[];
-    rain: number[];
-    showers: number[];
-    weather_code: number[];
-    cloud_cover: number[];
-    shortwave_radiation: number[];
-    is_day: number[];
-  };
 };
 
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
@@ -149,7 +106,12 @@ export async function fetchOpenMeteoForecast(location: ForecastLocation): Promis
     throw error;
   }
 
-  const data = (await response.json()) as OpenMeteoResponse;
+  let data: OpenMeteoResponse;
+  try {
+    data = OpenMeteoResponseSchema.parse(await response.json());
+  } catch {
+    throw new Error("Open-Meteo response heeft een onverwachte structuur");
+  }
 
   const sunriseTimes: Record<string, string> = {};
   const sunsetTimes: Record<string, string> = {};

@@ -35,6 +35,14 @@ Status: pending review.
 Reason: checkbox-driven chart visibility is user-visible behavior and easy to regress.
 Status: pending review.
 
+### Candidate - Zod schemas belong at the network boundary, not on internal types
+Use Zod only where uncontrolled external data enters the app (`response.json()` in `src/api/`). Internal types derived from that data are already safe and do not benefit from Zod schemas — adding them there creates noise without safety gain. Always catch `ZodError` immediately after `.parse()` and re-throw a plain `Error` with a readable message so the query layer and UI never see Zod internals. Derive TypeScript types with `z.infer<>` to avoid maintaining a parallel handwritten type alongside the schema.
+Status: pending review.
+
+### Candidate - Recharts `<Customized>` component props must be memoized
+`<Customized component={makeFoo(args)}>` creates a new function reference on every render. Recharts treats a changed `component` prop as a new element and re-mounts the layer. Wrap factory calls in `useMemo` so the reference is stable: `const FooLayer = useMemo(() => makeFoo(args), [args])`. This applies to every `<Customized>` usage, including border layers and the "nu" marker.
+Status: pending review.
+
 ### Candidate - Do not use SVG <defs> inside Recharts <Customized> sub-trees
 SVG `<defs>` nested inside a `<g>` rendered by `<Customized>` is not guaranteed
 to be in scope for `url(#id)` fill references — Safari/WebKit silently ignores

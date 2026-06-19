@@ -354,6 +354,9 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
   // from Recharts' per-bar layout so the canvas can align to it.
   const plotRectProbe = useMemo(() => makePlotRectProbe(setPlotRect), []);
 
+  const NowLineLayer = useMemo(() => makeNowLineLayer(hours, plotRect, isToday), [hours, plotRect, isToday]);
+  const ChartBorderLayer = useMemo(() => makeChartBorderLayer(plotRect), [plotRect]);
+
   return (
     <div style={{ marginTop: 10 }}>
       <div ref={shellRef} className="chart-shell" style={{ height: 280 }}>
@@ -449,11 +452,11 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
 
             {/* Solid border rectangle around the plot area — drawn after the
                 grid so it covers the dashed lines on all four edges. */}
-            <Customized component={makeChartBorderLayer(plotRect)} />
+            <Customized component={ChartBorderLayer} />
 
             {/* Dashed "now" marker at the exact current time — drawn last so it
                 paints on top of the grid and series. */}
-            <Customized component={makeNowLineLayer(hours, plotRect, isToday)} />
+            <Customized component={NowLineLayer} />
           </ComposedChart>
         )}
       </div>
