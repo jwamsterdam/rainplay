@@ -24,6 +24,7 @@ type Props = {
   showRain: boolean;
   showIcons: boolean;
   isToday?: boolean;
+  currentTemperatureC?: number;
 };
 
 // --- Icon path components (no <svg> wrapper, for use inside Recharts SVG) ---
@@ -163,7 +164,12 @@ function VerticalTimeTick(props: { x?: number | string; y?: number | string; pay
 // CLAMPED to the plot edges. So the marker still renders on the +2/+6 uur Vandaag
 // windows, which start at the first :00/:30 at/after now (now pins to the left
 // edge) — the old nowLineX returned null there and the marker vanished.
-function makeNowLineLayer(hours: HourlyWeather[], rect: PlotRect | null, isToday?: boolean) {
+function makeNowLineLayer(
+  hours: HourlyWeather[],
+  rect: PlotRect | null,
+  isToday?: boolean,
+  currentTemperatureC?: number,
+) {
   return function NowLineLayer() {
     if (!isToday || !rect || rect.width <= 0 || rect.height <= 0) return null;
     const fraction = nowFraction(hours, new Date());
@@ -171,21 +177,24 @@ function makeNowLineLayer(hours: HourlyWeather[], rect: PlotRect | null, isToday
     const x = rect.x + fraction * rect.width;
     const top = rect.y;
     const bottom = rect.y + rect.height;
+    // The now-marker label shows the current temperature when available, falling
+    // back to "nu" so the marker is still identifiable without live temp data.
+    const label = currentTemperatureC != null ? `${Math.round(currentTemperatureC)}°` : "nu";
     return (
       <g pointerEvents="none">
         <line x1={x} y1={top} x2={x} y2={bottom} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" />
         <text
           x={x - 3}
-          y={top + 8}
+          y={top + 15}
           textAnchor="end"
           fill="#ff3b30"
-          fontSize={10}
+          fontSize={11}
           fontWeight={700}
           style={{ paintOrder: "stroke" }}
           stroke="rgba(255, 255, 255, 0.85)"
           strokeWidth={2.5}
         >
-          nu
+          {label}
         </text>
       </g>
     );
@@ -335,7 +344,7 @@ function SkyGradientCanvas({ hours, colors, rect }: { hours: HourlyWeather[]; co
 
 // --- Main component ---
 
-function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons, isToday }: Props) {
+function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons, isToday, currentTemperatureC }: Props) {
   const [tempMin, tempMax] = useMemo(() => tempDomain(hours), [hours]);
   const colors = cellColors ?? defaultCellColors;
 
@@ -354,7 +363,10 @@ function DayChartRechartsBase({ hours, cellColors, showTemp, showRain, showIcons
   // from Recharts' per-bar layout so the canvas can align to it.
   const plotRectProbe = useMemo(() => makePlotRectProbe(setPlotRect), []);
 
-  const NowLineLayer = useMemo(() => makeNowLineLayer(hours, plotRect, isToday), [hours, plotRect, isToday]);
+  const NowLineLayer = useMemo(
+    () => makeNowLineLayer(hours, plotRect, isToday, currentTemperatureC),
+    [hours, plotRect, isToday, currentTemperatureC],
+  );
   const ChartBorderLayer = useMemo(() => makeChartBorderLayer(plotRect), [plotRect]);
 
   return (

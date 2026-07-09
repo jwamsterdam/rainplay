@@ -55,6 +55,11 @@ export function visibleHoursForSelection(
   return visibleHoursForHorizon(dayHours, horizon);
 }
 
+export function averageTemperature(hours: HourlyWeather[]): number | undefined {
+  if (hours.length === 0) return undefined;
+  return Math.round(average(hours.map((hour) => hour.temperatureC)));
+}
+
 export function headerDateLabel(hours: HourlyWeather[], day: DayOption) {
   if (day === "Week") return weekRangeLabel(hours);
 

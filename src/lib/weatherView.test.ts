@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  averageTemperature,
   headerDateLabel,
   visibleHoursForHorizon,
   visibleHoursForSelection,
@@ -41,6 +42,22 @@ const hours = [
   ...day("2026-06-12", { score: 8, kind: "sun", radiation: 500 }),
   ...day("2026-06-13", { score: 4, kind: "rain", precipitationMm: 0.7 }),
 ];
+
+describe("averageTemperature", () => {
+  it("returns the rounded mean temperature of the given hours", () => {
+    const points = [
+      hour("2026-06-11T10:00", { temperatureC: 16 }),
+      hour("2026-06-11T11:00", { temperatureC: 19 }),
+      hour("2026-06-11T12:00", { temperatureC: 22 }),
+    ];
+
+    expect(averageTemperature(points)).toBe(19);
+  });
+
+  it("returns undefined for an empty list so callers can fall back", () => {
+    expect(averageTemperature([])).toBeUndefined();
+  });
+});
 
 describe("visibleHoursForHorizon", () => {
   it("limits short horizons while preserving full-day data", () => {

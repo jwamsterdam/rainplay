@@ -15,7 +15,7 @@ import { useCurrentLocation } from "../hooks/useCurrentLocation";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { OfflineBanner } from "../components/OfflineBanner";
 import { bestOutdoorWindow, bestStartTime, bestWindowLabel, outdoorSummaryLabel } from "../lib/chart";
-import { headerDateLabel, visibleHoursForSelection, visiblePointsForTodayHorizon } from "../lib/weatherView";
+import { averageTemperature, headerDateLabel, visibleHoursForSelection, visiblePointsForTodayHorizon } from "../lib/weatherView";
 import { useForecastQuery } from "../queries/weather";
 import {
   dayOptions,
@@ -80,7 +80,12 @@ export function WeatherScreen() {
   const bestOutdoorSpan = useMemo(() => bestOutdoorWindow(visibleHours), [visibleHours]);
   const outdoorSummary = useMemo(() => outdoorSummaryLabel(visibleHours, bestOutdoorSpan), [bestOutdoorSpan, visibleHours]);
   const selectedDateLabel = useMemo(() => headerDateLabel(hourly, day), [day, hourly]);
-  const temperature = forecast.data?.currentTemperature ?? 18;
+  // "Vandaag" shows the live current temperature; other days (and the week view)
+  // show that day's average temperature since there is no single "now" for them.
+  const temperature = useMemo(() => {
+    if (day === "Vandaag") return forecast.data?.currentTemperature ?? 18;
+    return averageTemperature(visibleHours) ?? forecast.data?.currentTemperature ?? 18;
+  }, [day, forecast.data, visibleHours]);
 
   // Scroll-fraction ref: written by DayCarousel on every scroll frame,
   // read by SegmentedControl's RAF loop. Never triggers React re-renders.
@@ -133,6 +138,7 @@ export function WeatherScreen() {
           showIcons={showIcons}
           isLoading={forecast.isLoading || !locationResolved}
           isError={forecast.isError}
+          currentTemperatureC={forecast.data?.currentTemperature}
           onScrollFractionChange={handleScrollFraction}
           onRetry={() => forecast.refetch()}
         />

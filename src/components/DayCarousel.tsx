@@ -16,6 +16,7 @@ export type DayCarouselProps = {
   showIcons: boolean;
   isLoading: boolean;
   isError: boolean;
+  currentTemperatureC?: number;
   onScrollFractionChange?: (fraction: number) => void;
   onRetry?: () => void;
 };
@@ -30,6 +31,7 @@ export function DayCarousel({
   showIcons,
   isLoading,
   isError,
+  currentTemperatureC,
   onScrollFractionChange,
   onRetry,
 }: DayCarouselProps) {
@@ -201,6 +203,7 @@ export function DayCarousel({
               showRain={showRain}
               showIcons={showIcons}
               isToday={i === 0}
+              currentTemperatureC={i === 0 ? currentTemperatureC : undefined}
             />
           )}
         </div>
