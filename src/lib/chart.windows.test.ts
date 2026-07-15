@@ -201,6 +201,8 @@ describe("chart color helpers", () => {
     expect(parseRgba("rgb(10, 20, 30)")).toEqual({ r: 10, g: 20, b: 30, a: 1 });
     expect(parseRgba("rgba(10, 20, 30, 0.4)")).toEqual({ r: 10, g: 20, b: 30, a: 0.4 });
     expect(parseRgba("not-a-color")).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+    expect(parseRgba("rgb(1,2)")).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+    expect(parseRgba("rgb(1,2,3,4,5)")).toEqual({ r: 0, g: 0, b: 0, a: 1 });
   });
 
 });

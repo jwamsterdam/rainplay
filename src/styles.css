@@ -588,8 +588,14 @@ button {
   height: 36px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.30);
-  color: rgba(255, 255, 255, 0.92);
+  /* Dark ink glass (same tone as .settings-overlay's backdrop) instead of a
+     white-on-white glass button: two same-hue translucent whites cannot
+     satisfy contrast checking no matter how far alpha is pushed, since both
+     colors round toward white regardless of opacity. A dark base against a
+     solid white icon is both real contrast and the more reliable choice over
+     a variable-brightness photo header. */
+  background: rgba(16, 24, 40, 0.45);
+  color: #ffffff;
   cursor: pointer;
   backdrop-filter: blur(8px);
   transition: background 0.15s;
@@ -600,7 +606,7 @@ button {
 }
 
 .settings-gear-button:hover {
-  background: rgba(255, 255, 255, 0.34);
+  background: rgba(16, 24, 40, 0.55);
 }
 
 /* --- Settings overlay & sheet --- */

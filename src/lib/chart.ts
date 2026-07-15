@@ -200,15 +200,57 @@ function capitalize(value: string) {
 
 // --- Color helpers for gradient-overlap blend effect ---
 
+// Parsed without regex (typescript:S8786): a previous fix bounded every
+// quantifier in a single regex with three sequential \d{1,3} groups plus an
+// optional [\d.]{1,8} group, but Sonar's superlinear-backtracking heuristic
+// still flagged the pattern shape. A manual scan removes that shape entirely
+// instead of guessing at another pattern the heuristic might accept.
+const RGB_PREFIX = "rgb(";
+const RGBA_PREFIX = "rgba(";
+
 export function parseRgba(s: string): { r: number; g: number; b: number; a: number } {
-  const match = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]{1,8}))?\s*\)/.exec(s);
-  if (!match) return { r: 0, g: 0, b: 0, a: 1 };
+  const fallback = { r: 0, g: 0, b: 0, a: 1 };
+  const trimmed = s.trim();
+  const prefixLength = trimmed.startsWith(RGBA_PREFIX)
+    ? RGBA_PREFIX.length
+    : trimmed.startsWith(RGB_PREFIX)
+      ? RGB_PREFIX.length
+      : -1;
+  if (prefixLength === -1 || !trimmed.endsWith(")")) return fallback;
+
+  const parts = trimmed
+    .slice(prefixLength, trimmed.length - 1)
+    .split(",")
+    .map((part) => part.trim());
+  if (parts.length < 3 || parts.length > 4) return fallback;
+
+  const [rPart, gPart, bPart, aPart] = parts;
+  if (!isDigits(rPart, 3) || !isDigits(gPart, 3) || !isDigits(bPart, 3)) return fallback;
+  if (aPart !== undefined && !isDecimalDigits(aPart, 8)) return fallback;
+
   return {
-    r: Number.parseInt(match[1], 10),
-    g: Number.parseInt(match[2], 10),
-    b: Number.parseInt(match[3], 10),
-    a: match[4] !== undefined ? Number.parseFloat(match[4]) : 1,
+    r: Number.parseInt(rPart, 10),
+    g: Number.parseInt(gPart, 10),
+    b: Number.parseInt(bPart, 10),
+    a: aPart !== undefined ? Number.parseFloat(aPart) : 1,
   };
+}
+
+function isDigits(value: string, maxLength: number): boolean {
+  if (value.length === 0 || value.length > maxLength) return false;
+  for (let i = 0; i < value.length; i += 1) {
+    if (value[i] < "0" || value[i] > "9") return false;
+  }
+  return true;
+}
+
+function isDecimalDigits(value: string, maxLength: number): boolean {
+  if (value.length === 0 || value.length > maxLength) return false;
+  for (let i = 0; i < value.length; i += 1) {
+    const char = value[i];
+    if (char !== "." && (char < "0" || char > "9")) return false;
+  }
+  return true;
 }
 
 export function lerpRgba(c1: string, c2: string, t: number): string {
