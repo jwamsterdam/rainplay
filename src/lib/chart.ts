@@ -190,13 +190,13 @@ function capitalize(value: string) {
 // --- Color helpers for gradient-overlap blend effect ---
 
 export function parseRgba(s: string): { r: number; g: number; b: number; a: number } {
-  const match = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
+  const match = s.match(/rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]{1,8}))?\s*\)/);
   if (!match) return { r: 0, g: 0, b: 0, a: 1 };
   return {
-    r: parseInt(match[1], 10),
-    g: parseInt(match[2], 10),
-    b: parseInt(match[3], 10),
-    a: match[4] !== undefined ? parseFloat(match[4]) : 1,
+    r: Number.parseInt(match[1], 10),
+    g: Number.parseInt(match[2], 10),
+    b: Number.parseInt(match[3], 10),
+    a: match[4] !== undefined ? Number.parseFloat(match[4]) : 1,
   };
 }
 

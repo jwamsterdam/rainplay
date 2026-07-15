@@ -9,5 +9,5 @@ export function scoreColor(score: number): string {
 export function formatTick(t: string): string {
   if (!t.includes(":")) return t;
   const [hh = "0", mm = "00"] = t.split(":");
-  return `${parseInt(hh, 10)}:${mm}`;
+  return `${Number.parseInt(hh, 10)}:${mm}`;
 }

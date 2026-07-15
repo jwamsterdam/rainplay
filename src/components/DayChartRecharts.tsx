@@ -336,7 +336,8 @@ function SkyGradientCanvas({ hours, colors, rect }: { hours: HourlyWeather[]; co
   return (
     <canvas
       ref={canvasRef}
-      aria-hidden
+      aria-hidden="true"
+      tabIndex={-1}
       style={{ position: "absolute", left: rect.x, top: rect.y, pointerEvents: "none" }}
     />
   );

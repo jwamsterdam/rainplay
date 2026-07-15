@@ -97,13 +97,13 @@ function rgbaToHex(rgba: string): string {
 
 function extractAlpha(rgba: string): number {
   const m = rgba.match(/rgba?\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/);
-  return m ? parseFloat(m[1]) : 1;
+  return m ? Number.parseFloat(m[1]) : 1;
 }
 
 function hexToRgba(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
+  const r = Number.parseInt(hex.slice(1, 3), 16);
+  const g = Number.parseInt(hex.slice(3, 5), 16);
+  const b = Number.parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
@@ -299,6 +299,7 @@ export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, show
                 <input
                   ref={(el) => { inputRefs.current[key] = el; }}
                   type="color"
+                  tabIndex={-1}
                   value={hex}
                   onChange={(e) => handleColorChange(key, e.target.value)}
                   style={{
@@ -318,7 +319,7 @@ export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, show
                     max={1}
                     step={0.01}
                     value={alpha}
-                    onChange={(e) => handleAlphaChange(key, parseFloat(e.target.value))}
+                    onChange={(e) => handleAlphaChange(key, Number.parseFloat(e.target.value))}
                     className="settings-alpha-slider"
                     aria-label={`Intensiteit voor ${label}`}
                   />
