@@ -4,6 +4,7 @@ import {
   bestStartTime,
   bestWindowLabel,
   cellFill,
+  firstNonEmpty,
   outdoorSummaryLabel,
   parseRgba,
 } from "./chart";
@@ -167,6 +168,27 @@ describe("outdoorSummaryLabel", () => {
     const eveningWindow: OutdoorWindow = { startIndex: 0, endIndex: 0, startTime: "19:00", endTime: "20:00" };
 
     expect(outdoorSummaryLabel([], eveningWindow)).toBe("Avond beste buitenmoment");
+  });
+});
+
+describe("firstNonEmpty", () => {
+  // bestOutdoorWindow's own final tier (scoreOnlyWindows) can never be empty for a
+  // non-empty hours array, so the "all candidates empty" fallback branch is
+  // unreachable through that call site — it is tested directly here instead.
+  it("returns the first non-empty candidate", () => {
+    expect(firstNonEmpty([], [1, 2], [3])).toEqual([1, 2]);
+  });
+
+  it("returns an already-non-empty first candidate without inspecting the rest", () => {
+    expect(firstNonEmpty([1], [2])).toEqual([1]);
+  });
+
+  it("falls back to the last candidate when every candidate is empty", () => {
+    expect(firstNonEmpty<number>([], [], [])).toEqual([]);
+  });
+
+  it("returns an empty array when called with no candidates at all", () => {
+    expect(firstNonEmpty()).toEqual([]);
   });
 });
 

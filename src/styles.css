@@ -77,7 +77,7 @@ button {
   width: 100%;
   padding: max(6px, env(safe-area-inset-top)) var(--space-4) 6px;
   background: #f59e0b;
-  color: #fff;
+  color: #402400;
   font-size: 12px;
   font-weight: 500;
   text-align: center;
@@ -453,6 +453,9 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Knoppen staan altijd boven de indicator-pill */
+  position: relative;
+  z-index: 1;
 }
 
 .segmented-disabled {
@@ -483,12 +486,6 @@ button {
   will-change: transform;
   z-index: 0; /* below the segment buttons */
   /* No CSS transition — movement is driven by the RAF loop */
-}
-
-/* Knoppen staan altijd boven de indicator-pill */
-.segment {
-  position: relative;
-  z-index: 1;
 }
 
 /* Suppress the duplicate white background when the sliding indicator is active */
@@ -591,11 +588,15 @@ button {
   height: 36px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
-  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.30);
+  color: rgba(255, 255, 255, 0.92);
   cursor: pointer;
   backdrop-filter: blur(8px);
   transition: background 0.15s;
+}
+
+.settings-gear-button svg {
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.35));
 }
 
 .settings-gear-button:hover {

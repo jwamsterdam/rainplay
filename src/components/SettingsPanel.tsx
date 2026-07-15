@@ -85,7 +85,7 @@ const COLOR_ROWS: ColorRow[] = [
 // --- rgba ↔ hex helpers ---
 
 function rgbaToHex(rgba: string): string {
-  const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgba);
   if (!m) return "#000000";
   return (
     "#" +
@@ -96,7 +96,7 @@ function rgbaToHex(rgba: string): string {
 }
 
 function extractAlpha(rgba: string): number {
-  const m = rgba.match(/rgba?\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/);
+  const m = /rgba?\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/.exec(rgba);
   return m ? Number.parseFloat(m[1]) : 1;
 }
 
@@ -210,15 +210,15 @@ function ColdLaunchSamples() {
 // --- Component ---
 
 type Props = {
-  colors: CellColors;
-  onColorsChange: (colors: CellColors) => void;
-  showTemp: boolean;
-  showRain: boolean;
-  showIcons: boolean;
-  onShowTempChange: (v: boolean) => void;
-  onShowRainChange: (v: boolean) => void;
-  onShowIconsChange: (v: boolean) => void;
-  onClose: () => void;
+  readonly colors: CellColors;
+  readonly onColorsChange: (colors: CellColors) => void;
+  readonly showTemp: boolean;
+  readonly showRain: boolean;
+  readonly showIcons: boolean;
+  readonly onShowTempChange: (v: boolean) => void;
+  readonly onShowRainChange: (v: boolean) => void;
+  readonly onShowIconsChange: (v: boolean) => void;
+  readonly onClose: () => void;
 };
 
 export function SettingsPanel({ colors, onColorsChange, showTemp, showRain, showIcons, onShowTempChange, onShowRainChange, onShowIconsChange, onClose }: Props) {

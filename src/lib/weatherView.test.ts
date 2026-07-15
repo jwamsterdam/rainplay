@@ -180,6 +180,17 @@ describe("summarizeDay kind selection", () => {
 
     expect(summary.kind).toBe("partly");
   });
+
+  it("yields 'sun' when sunny hours tie with partly hours (>= boundary, not just >)", () => {
+    // configuredDayHours keeps hours 0,2,4,...,22 (12 hours/day, step 2).
+    // Of those: h % 4 === 0 → "sun" (0,4,8,12,16,20 = 6 hours),
+    // the remaining even hours → "partly" (2,6,10,14,18,22 = 6 hours).
+    // sunnyHours (6) === partlyHours (6) and sunnyHours > 0, so the tie must resolve to "sun".
+    const tiedHours = makeKindDay("2026-06-11", (h) => (h % 4 === 0 ? "sun" : "partly"));
+    const [summary] = visibleHoursForSelection(tiedHours, "Week", "Hele dag");
+
+    expect(summary.kind).toBe("sun");
+  });
 });
 
 describe("headerDateLabel", () => {

@@ -77,7 +77,6 @@ function makeHour(overrides: Partial<HourlyWeather> = {}): HourlyWeather {
 
 // Shared minimal props
 const baseProps = {
-  horizon: "Hele dag" as const,
   showTemp: true,
   showRain: true,
   showIcons: true,

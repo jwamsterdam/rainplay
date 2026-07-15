@@ -106,10 +106,10 @@ describe("WeatherScreen", () => {
   it("renders the day selector with Vandaag, Morgen, Overmorgen, Week", () => {
     const { Wrapper } = makeWrapper();
     render(<WeatherScreen />, { wrapper: Wrapper });
-    // SegmentedControl renders buttons with aria-pressed, not radio inputs
-    expect(screen.getByRole("button", { name: "Vandaag" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Morgen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Week" })).toBeInTheDocument();
+    // SegmentedControl renders <button> elements with role="radio" and aria-checked
+    expect(screen.getByRole("radio", { name: "Vandaag" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Morgen" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Week" })).toBeInTheDocument();
   });
 
   it("renders the gear button", () => {
@@ -159,9 +159,9 @@ describe("WeatherScreen", () => {
   it("disables the horizon selector when Morgen is selected", async () => {
     const { Wrapper } = makeWrapper();
     render(<WeatherScreen />, { wrapper: Wrapper });
-    fireEvent.click(screen.getByRole("button", { name: "Morgen" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Morgen" }));
     await waitFor(() => {
-      const horizonControl = screen.getByRole("group", {
+      const horizonControl = screen.getByRole("radiogroup", {
         name: /tijdshorizon alleen beschikbaar voor vandaag/i,
       });
       expect(horizonControl).toBeInTheDocument();

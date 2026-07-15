@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useAtomValue } from "jotai";
 import { ComposedChart, XAxis, YAxis, Line, Bar, CartesianGrid, Customized } from "recharts";
-import type { HorizonOption, HourlyWeather, WeatherKind } from "../types";
+import type { HourlyWeather, WeatherKind } from "../types";
 import { defaultCellColors } from "./cellColors";
 import type { CellColors } from "./cellColors";
 import { buildSkyGradientStops } from "../lib/chart";
@@ -17,14 +17,13 @@ const ICON_SIZE = 22;
 const ICON_SCALE = ICON_SIZE / 48;
 
 type Props = {
-  hours: HourlyWeather[];
-  horizon: HorizonOption;
-  cellColors?: CellColors;
-  showTemp: boolean;
-  showRain: boolean;
-  showIcons: boolean;
-  isToday?: boolean;
-  currentTemperatureC?: number;
+  readonly hours: HourlyWeather[];
+  readonly cellColors?: CellColors;
+  readonly showTemp: boolean;
+  readonly showRain: boolean;
+  readonly showIcons: boolean;
+  readonly isToday?: boolean;
+  readonly currentTemperatureC?: number;
 };
 
 // --- Icon path components (no <svg> wrapper, for use inside Recharts SVG) ---
@@ -88,7 +87,7 @@ function iconPaths(kind: WeatherKind) {
 
 type KindMap = Record<string, WeatherKind>;
 
-function WeatherIconTick(props: { x?: number | string; y?: number | string; payload?: { value: string }; kindMap?: KindMap }) {
+function WeatherIconTick(props: { readonly x?: number | string; readonly y?: number | string; readonly payload?: { value: string }; readonly kindMap?: KindMap }) {
   const x = Number(props.x ?? 0);
   const y = Number(props.y ?? 0);
   const kind = props.payload && props.kindMap ? props.kindMap[props.payload.value] : undefined;
@@ -108,7 +107,7 @@ function WeatherIconTick(props: { x?: number | string; y?: number | string; payl
 const SCORE_R = 11;
 const SCORE_SIZE = SCORE_R * 2 + 4;
 
-function ScoreTick(props: { x?: number | string; y?: number | string; payload?: { value: string }; scoreMap?: Record<string, number> }) {
+function ScoreTick(props: { readonly x?: number | string; readonly y?: number | string; readonly payload?: { value: string }; readonly scoreMap?: Record<string, number> }) {
   const x = Number(props.x ?? 0);
   const y = Number(props.y ?? 0);
   const score = props.payload && props.scoreMap ? props.scoreMap[props.payload.value] : undefined;
@@ -135,7 +134,7 @@ function ScoreTick(props: { x?: number | string; y?: number | string; payload?: 
 // --- Helpers ---
 
 // Custom vertical tick for the x-axis
-function VerticalTimeTick(props: { x?: number | string; y?: number | string; payload?: { value: string } }) {
+function VerticalTimeTick(props: { readonly x?: number | string; readonly y?: number | string; readonly payload?: { value: string } }) {
   const x = Number(props.x ?? 0);
   const y = Number(props.y ?? 0);
   const label = formatTick(props.payload?.value ?? "");
@@ -261,11 +260,10 @@ function makePlotRectProbe(onMeasure: (rect: PlotRect) => void) {
     if (minX === Infinity || maxRight === -Infinity) return;
     const next: PlotRect = { x: minX, y: top, width: maxRight - minX, height: bottom - top };
     if (
-      !pending ||
-      pending.x !== next.x ||
-      pending.y !== next.y ||
-      pending.width !== next.width ||
-      pending.height !== next.height
+      pending?.x !== next.x ||
+      pending?.y !== next.y ||
+      pending?.width !== next.width ||
+      pending?.height !== next.height
     ) {
       pending = next;
       onMeasure(next);
@@ -301,7 +299,7 @@ function makePlotRectProbe(onMeasure: (rect: PlotRect) => void) {
 }
 
 // Canvas that paints the sky gradient for the measured plot rect.
-function SkyGradientCanvas({ hours, colors, rect }: { hours: HourlyWeather[]; colors: CellColors; rect: PlotRect | null }) {
+function SkyGradientCanvas({ hours, colors, rect }: { readonly hours: HourlyWeather[]; readonly colors: CellColors; readonly rect: PlotRect | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const twilightWm2 = useAtomValue(twilightRadiationAtom);
 

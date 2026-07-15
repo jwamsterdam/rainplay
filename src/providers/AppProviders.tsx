@@ -5,7 +5,7 @@ import { queryClient } from "../queries/queryClient";
 import { appStore } from "../state/store";
 
 type AppProvidersProps = {
-  children: ReactNode;
+  readonly children: ReactNode;
 };
 
 export function AppProviders({ children }: AppProvidersProps) {

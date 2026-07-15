@@ -187,20 +187,28 @@ describe("DayCarousel", () => {
 
   // -------------------------------------------------------------------------
   // Test 2: Atom change → scrollTo called with correct left offset
+  // (parameterized: same assertion shape for every day/index pair)
   // -------------------------------------------------------------------------
-  it("calls scrollTo({ left: width * 1, behavior: smooth }) when atom changes to Morgen", async () => {
-    const { store, scrollToSpy } = await renderCarousel();
+  it.each<{ name: DayOption; index: number }>([
+    { name: "Morgen", index: 1 },
+    { name: "Overmorgen", index: 2 },
+    { name: "Week", index: 3 },
+  ])(
+    "calls scrollTo({ left: width * $index, behavior: smooth }) when atom changes to $name",
+    async ({ name, index }) => {
+      const { store, scrollToSpy } = await renderCarousel();
 
-    act(() => {
-      store.set(selectedDayAtom, "Morgen");
-    });
+      act(() => {
+        store.set(selectedDayAtom, name);
+      });
 
-    // "Morgen" is dayOptions index 1 → expected left = 1 * PANEL_WIDTH.
-    expect(scrollToSpy).toHaveBeenCalledWith({
-      left: PANEL_WIDTH * 1,
-      behavior: "smooth",
-    });
-  });
+      // dayOptions index determines the expected left offset.
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        left: PANEL_WIDTH * index,
+        behavior: "smooth",
+      });
+    },
+  );
 
   // -------------------------------------------------------------------------
   // Test 3: User swipe → scrollend event → atom updated
@@ -349,22 +357,6 @@ describe("DayCarousel", () => {
   });
 
   // -------------------------------------------------------------------------
-  // Extra: atom change to Week calls scrollTo with index 3
-  // -------------------------------------------------------------------------
-  it("calls scrollTo({ left: width * 3 }) when atom changes to Week", async () => {
-    const { store, scrollToSpy } = await renderCarousel();
-
-    act(() => {
-      store.set(selectedDayAtom, "Week");
-    });
-
-    expect(scrollToSpy).toHaveBeenCalledWith({
-      left: PANEL_WIDTH * 3,
-      behavior: "smooth",
-    });
-  });
-
-  // -------------------------------------------------------------------------
   // Extra: guard clears after setTimeout(0) — subsequent scrollend is processed
   // -------------------------------------------------------------------------
   it("processes a scrollend that arrives after the guard-clearing setTimeout fires", async () => {
@@ -385,22 +377,6 @@ describe("DayCarousel", () => {
     act(() => { simulateUserScrollEnd(container, 3); });
 
     expect(store.get(selectedDayAtom)).toBe("Week");
-  });
-
-  // -------------------------------------------------------------------------
-  // Extra: Overmorgen atom change calls scrollTo with index 2
-  // -------------------------------------------------------------------------
-  it("calls scrollTo({ left: width * 2 }) when atom changes to Overmorgen", async () => {
-    const { store, scrollToSpy } = await renderCarousel();
-
-    act(() => {
-      store.set(selectedDayAtom, "Overmorgen");
-    });
-
-    expect(scrollToSpy).toHaveBeenCalledWith({
-      left: PANEL_WIDTH * 2,
-      behavior: "smooth",
-    });
   });
 
   // -------------------------------------------------------------------------

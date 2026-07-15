@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
-import { execSync } from "child_process";
-import { readFileSync } from "fs";
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 // Build versie: major.minor uit package.json, patch = git commit count.
 // Groeit automatisch mee zonder handmatig bumpen.

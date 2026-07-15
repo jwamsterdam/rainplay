@@ -7,18 +7,18 @@ import { dayOptions, selectedDayAtom } from "../state/weatherAtoms";
 import type { ForecastPoint, HorizonOption, HourlyWeather } from "../types";
 
 export type DayCarouselProps = {
-  hourly: HourlyWeather[];
-  minutely15: ForecastPoint[];
-  horizon: HorizonOption;
-  cellColors: CellColors;
-  showTemp: boolean;
-  showRain: boolean;
-  showIcons: boolean;
-  isLoading: boolean;
-  isError: boolean;
-  currentTemperatureC?: number;
-  onScrollFractionChange?: (fraction: number) => void;
-  onRetry?: () => void;
+  readonly hourly: HourlyWeather[];
+  readonly minutely15: ForecastPoint[];
+  readonly horizon: HorizonOption;
+  readonly cellColors: CellColors;
+  readonly showTemp: boolean;
+  readonly showRain: boolean;
+  readonly showIcons: boolean;
+  readonly isLoading: boolean;
+  readonly isError: boolean;
+  readonly currentTemperatureC?: number;
+  readonly onScrollFractionChange?: (fraction: number) => void;
+  readonly onRetry?: () => void;
 };
 
 export function DayCarousel({
@@ -197,7 +197,6 @@ export function DayCarousel({
           ) : (
             <DayChartRecharts
               hours={panelHours[i]}
-              horizon={horizon}
               cellColors={cellColors}
               showTemp={showTemp}
               showRain={showRain}

@@ -1,8 +1,8 @@
 type Props = {
-  active: boolean;
-  color: string;
-  label: string;
-  onClick: () => void;
+  readonly active: boolean;
+  readonly color: string;
+  readonly label: string;
+  readonly onClick: () => void;
 };
 
 export function ToggleButton({ active, color, label, onClick }: Props) {

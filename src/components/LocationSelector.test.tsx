@@ -117,6 +117,27 @@ describe("LocationSelector", () => {
     expect(screen.getByRole("option", { name: /amsterdam/i })).toBeInTheDocument();
   });
 
+  it("marks the currently-selected location as aria-selected among search suggestions", async () => {
+    const utrecht: ForecastLocation = {
+      id: "utrecht",
+      name: "Utrecht",
+      latitude: 52.0907,
+      longitude: 5.1214,
+      source: "manual",
+    };
+    mockSearch.mockResolvedValue([amsterdam, utrecht]);
+    const { store, Wrapper } = makeWrapper();
+    store.set(selectedLocationAtom, amsterdam);
+    store.set(locationMenuOpenAtom, true);
+    render(<LocationSelector onUseCurrentLocation={vi.fn()} />, { wrapper: Wrapper });
+    fireEvent.change(screen.getByPlaceholderText("Plaats zoeken"), { target: { value: "recht" } });
+    // real timers — debounce is 250ms, waitFor default timeout is 1000ms
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeInTheDocument());
+
+    expect(screen.getByRole("option", { name: /amsterdam/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("option", { name: /utrecht/i })).toHaveAttribute("aria-selected", "false");
+  });
+
   it("selects a location and closes the menu when a result is clicked", async () => {
     mockSearch.mockResolvedValue([amsterdam]);
     const { store, Wrapper } = makeWrapper();

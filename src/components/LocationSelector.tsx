@@ -12,7 +12,7 @@ import {
 import { LocationArrow } from "./WeatherIcons";
 
 type LocationSelectorProps = {
-  onUseCurrentLocation: () => Promise<void>;
+  readonly onUseCurrentLocation: () => Promise<void>;
 };
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -77,6 +77,18 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
     setMenuOpen(false);
   };
 
+  const handleDeleteLocation = (location: ForecastLocation) => {
+    setSavedLocations((locations) => {
+      const nextLocations = locations.filter((savedLocation) => !isSameLocation(savedLocation, location));
+
+      if (isSameLocation(selectedLocation, location)) {
+        setSelectedLocation(nextLocations[0] ?? defaultLocation);
+      }
+
+      return nextLocations;
+    });
+  };
+
   return (
     <div className="location-selector">
       <button
@@ -132,17 +144,7 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
                 <button
                   aria-label={`${location.name} verwijderen`}
                   className="location-delete-button"
-                  onClick={() => {
-                    setSavedLocations((locations) => {
-                      const nextLocations = locations.filter((savedLocation) => !isSameLocation(savedLocation, location));
-
-                      if (isSameLocation(selectedLocation, location)) {
-                        setSelectedLocation(nextLocations[0] ?? defaultLocation);
-                      }
-
-                      return nextLocations;
-                    });
-                  }}
+                  onClick={() => handleDeleteLocation(location)}
                   type="button"
                 >
                   Verwijder
@@ -177,7 +179,7 @@ export function LocationSelector({ onUseCurrentLocation }: LocationSelectorProps
                       className="location-suggestion"
                       onClick={() => chooseLocation(suggestion)}
                       role="option"
-                      aria-selected={false}
+                      aria-selected={isSameLocation(suggestion, selectedLocation)}
                       type="button"
                     >
                       <span className="location-suggestion-name">{suggestion.name}</span>

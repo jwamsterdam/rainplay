@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
 
 type SegmentedControlProps<T extends string> = {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (value: T) => void;
-  compact?: boolean;
-  disabled?: boolean;
-  displayLabels?: Partial<Record<T, string>>;
-  scrollFractionRef?: React.RefObject<number>;
+  readonly label: string;
+  readonly options: readonly T[];
+  readonly value: T;
+  readonly onChange: (value: T) => void;
+  readonly compact?: boolean;
+  readonly disabled?: boolean;
+  readonly displayLabels?: Partial<Record<T, string>>;
+  readonly scrollFractionRef?: React.RefObject<number>;
 };
 
 export function SegmentedControl<T extends string>({
@@ -60,7 +60,7 @@ export function SegmentedControl<T extends string>({
   }, [scrollFractionRef, options.length]);
 
   return (
-    <div aria-disabled={disabled} aria-label={label} className={className} role="group">
+    <div aria-disabled={disabled} aria-label={label} className={className} role="radiogroup">
       {scrollFractionRef && (
         <div className="segment-indicator" aria-hidden="true" ref={indicatorRef} />
       )}
@@ -70,13 +70,14 @@ export function SegmentedControl<T extends string>({
         return (
           <button
             aria-label={option}
-            aria-pressed={option === value}
+            aria-checked={option === value}
             className={option === value ? "segment active" : "segment"}
             disabled={disabled}
             key={option}
             onClick={() => {
               if (!disabled) onChange(option);
             }}
+            role="radio"
             title={option}
             type="button"
           >

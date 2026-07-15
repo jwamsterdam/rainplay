@@ -84,15 +84,13 @@ export function bestOutdoorWindow(hours: HourlyWeather[]): OutdoorWindow | null 
   );
   const fallbackWindows = contiguousWindows(hours, (hour) => hour.score >= bestNonRainScore && hour.kind !== "rain");
   const scoreOnlyWindows = contiguousWindows(hours, (hour) => hour.score >= bestScore);
-  const windows = brightWindows.length > 0
-    ? brightWindows
-    : practicalPreferredWindows.length > 0
-      ? practicalPreferredWindows
-    : preferredWindows.length > 0
-      ? preferredWindows
-      : fallbackWindows.length > 0
-        ? fallbackWindows
-        : scoreOnlyWindows;
+  const windows = firstNonEmpty(
+    brightWindows,
+    practicalPreferredWindows,
+    preferredWindows,
+    fallbackWindows,
+    scoreOnlyWindows,
+  );
 
   return windows.reduce((best, current) => {
     const bestLength = best.endIndex - best.startIndex;
@@ -104,6 +102,19 @@ export function bestOutdoorWindow(hours: HourlyWeather[]): OutdoorWindow | null 
     if (currentLength === bestLength && currentAverage > bestAverage) return current;
     return best;
   }, windows[0]);
+}
+
+// Exported (in addition to being used internally by bestOutdoorWindow) purely as a
+// testability seam: bestOutdoorWindow's own final tier (scoreOnlyWindows) is always
+// non-empty for a non-empty `hours` input — its predicate is `score >= bestScore`,
+// and bestScore is itself the max of an existing hour's score — so the "all
+// candidates empty" fallback branch below is unreachable through that call site.
+// It is still real, generic behaviour worth locking down directly.
+export function firstNonEmpty<T>(...candidates: T[][]): T[] {
+  for (const candidate of candidates) {
+    if (candidate.length > 0) return candidate;
+  }
+  return candidates[candidates.length - 1] ?? [];
 }
 
 function contiguousWindows(
@@ -190,7 +201,7 @@ function capitalize(value: string) {
 // --- Color helpers for gradient-overlap blend effect ---
 
 export function parseRgba(s: string): { r: number; g: number; b: number; a: number } {
-  const match = s.match(/rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]{1,8}))?\s*\)/);
+  const match = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]{1,8}))?\s*\)/.exec(s);
   if (!match) return { r: 0, g: 0, b: 0, a: 1 };
   return {
     r: Number.parseInt(match[1], 10),

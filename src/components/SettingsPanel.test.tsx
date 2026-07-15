@@ -93,7 +93,7 @@ describe("SettingsPanel", () => {
     render(<SettingsPanel {...defaultProps()} />);
     // defaultCellColors has 5 rows — each renders a "N%" span
     const percentSpans = screen.getAllByText(/^\d+%$/);
-    expect(percentSpans.length).toBe(5);
+    expect(percentSpans).toHaveLength(5);
   });
 
   it("calls onColorsChange when the alpha slider is moved", () => {

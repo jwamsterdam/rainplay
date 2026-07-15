@@ -1,5 +1,11 @@
-import type { DayOption, ForecastPoint, HorizonOption, HourlyWeather } from "../types";
+import type { DayOption, ForecastPoint, HorizonOption, HourlyWeather, WeatherKind } from "../types";
 import { weatherViewSettings } from "../config/weatherSettings";
+
+const DAY_OFFSET: Record<Exclude<DayOption, "Week">, number> = {
+  Vandaag: 0,
+  Morgen: 1,
+  Overmorgen: 2,
+};
 
 export function visibleHoursForHorizon(hours: HourlyWeather[], horizon: HorizonOption) {
   if (horizon === "+2 uur") return hours.slice(0, 3);
@@ -84,7 +90,7 @@ function dateForDayOption(hours: HourlyWeather[], day: Exclude<DayOption, "Week"
 
   const [year, month, dateOfMonth] = firstDate.split("-").map(Number);
   const date = new Date(year, month - 1, dateOfMonth);
-  const offset = day === "Vandaag" ? 0 : day === "Morgen" ? 1 : 2;
+  const offset = DAY_OFFSET[day];
   date.setDate(date.getDate() + offset);
 
   return [
@@ -162,15 +168,15 @@ function summarizeDay(date: string, dayHours: HourlyWeather[]): HourlyWeather {
     cloudCover: averageCloudCover,
     radiation: averageRadiation,
     isDay: daytimeHours >= dayHours.length / 2,
-    kind:
-      rainyHours >= 3
-        ? "rain"
-        : sunnyHours >= partlyHours && sunnyHours > 0
-          ? "sun"
-          : partlyHours > 0
-            ? "partly"
-            : "cloud",
+    kind: summaryKindFor(rainyHours, sunnyHours, partlyHours),
   };
+}
+
+function summaryKindFor(rainyHours: number, sunnyHours: number, partlyHours: number): WeatherKind {
+  if (rainyHours >= 3) return "rain";
+  if (sunnyHours >= partlyHours && sunnyHours > 0) return "sun";
+  if (partlyHours > 0) return "partly";
+  return "cloud";
 }
 
 function average(values: number[]) {

@@ -70,40 +70,32 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("searchLocations — short-circuit for short queries", () => {
-  it(`returns [] without fetching when query length is less than MIN_QUERY_LENGTH (${MIN_QUERY_LENGTH})`, async () => {
+  // Parameterized: all four cases share the same assertion shape (no fetch,
+  // result === []) and differ only in the input query and why it's "short".
+  it.each<{ name: string; query: string }>([
+    {
+      name: `returns [] without fetching when query length is less than MIN_QUERY_LENGTH (${MIN_QUERY_LENGTH})`,
+      query: "a",
+    },
+    { name: "returns [] for an empty string", query: "" },
+    {
+      // "  ".trim() === "" — length 0 < MIN_QUERY_LENGTH
+      name: "trims whitespace before measuring: a two-space string is below the threshold",
+      query: "  ",
+    },
+    {
+      // " a" trimmed = "a" — length 1 < MIN_QUERY_LENGTH (2)
+      name: "trims a query that would be long enough only with leading/trailing spaces",
+      query: " a",
+    },
+  ])("$name", async ({ query }) => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await searchLocations("a");
+    const result = await searchLocations(query);
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result).toEqual([]);
-  });
-
-  it("returns [] for an empty string", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-
-    expect(await searchLocations("")).toEqual([]);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("trims whitespace before measuring: a two-space string is below the threshold", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-
-    // "  ".trim() === "" — length 0 < MIN_QUERY_LENGTH
-    expect(await searchLocations("  ")).toEqual([]);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("trims a query that would be long enough only with leading/trailing spaces", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-
-    // " a" trimmed = "a" — length 1 < MIN_QUERY_LENGTH (2)
-    expect(await searchLocations(" a")).toEqual([]);
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it(`fetches when the query (after trim) is exactly MIN_QUERY_LENGTH (${MIN_QUERY_LENGTH}) characters`, async () => {

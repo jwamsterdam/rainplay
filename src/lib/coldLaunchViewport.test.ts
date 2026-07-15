@@ -82,7 +82,7 @@ describe("coldLaunchViewport", () => {
 
     const before = document.body.children.length;
     mod.measureCssHeight("100svh");
-    expect(document.body.children.length).toBe(before);
+    expect(document.body.children).toHaveLength(before);
   });
 
   it("measureCssHeight rounds the pixel height to the nearest integer", async () => {

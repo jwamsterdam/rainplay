@@ -20,4 +20,10 @@ export type HourlyWeather = {
   sunsetMs?: number;
 };
 
-export type ForecastPoint = HourlyWeather;
+// ForecastPoint intentionally aliases HourlyWeather (NOSONAR typescript:S6564).
+// It documents that minutely15 data is Open-Meteo's separate 15-minute-resolution
+// forecast stream, distinct from hourly readings, even though the two shapes
+// currently match. Do not collapse this into HourlyWeather — the name carries
+// domain meaning relied on across DayCarousel, openMeteo normalization, and
+// weatherView chart-window logic.
+export type ForecastPoint = HourlyWeather; // NOSONAR

@@ -9,7 +9,7 @@
  * - Active segment has class "segment active" for both modes.
  * - onChange called with correct value on button click.
  * - Disabled state: onClick does not call onChange, aria-disabled is set.
- * - Accessibility: group role and aria-label present, buttons have aria-pressed.
+ * - Accessibility: radiogroup role and aria-label present, radio buttons have aria-checked.
  * - displayLabels: custom display label rendered, aria-label still uses raw option value.
  * - scrollFractionRef mode: indicator div is aria-hidden.
  * - RAF loop: indicator style.transform is driven from the ref value (tested via
@@ -95,7 +95,7 @@ describe("SegmentedControl — without scrollFractionRef (horizon mode)", () => 
 
   it("does NOT have the segmented--with-indicator class", () => {
     const { container } = renderControl({ options: horizonOptions, value: "Hele dag" });
-    const group = container.querySelector("[role='group']");
+    const group = container.querySelector("[role='radiogroup']");
     expect(group).not.toBeNull();
     expect(group!.classList.contains("segmented--with-indicator")).toBe(false);
   });
@@ -103,26 +103,34 @@ describe("SegmentedControl — without scrollFractionRef (horizon mode)", () => 
   it("renders all horizon option buttons", () => {
     renderControl({ options: horizonOptions, value: "Hele dag" });
     for (const opt of horizonOptions) {
-      expect(screen.getByRole("button", { name: opt })).toBeTruthy();
+      expect(screen.getByRole("radio", { name: opt })).toBeTruthy();
     }
   });
 
-  it("marks the active option with aria-pressed=true", () => {
+  it("marks the active option with aria-checked=true", () => {
     renderControl({ options: horizonOptions, value: "+6 uur" });
-    const activeBtn = screen.getByRole("button", { name: "+6 uur" });
-    expect(activeBtn.getAttribute("aria-pressed")).toBe("true");
+    const activeBtn = screen.getByRole("radio", { name: "+6 uur" });
+    expect(activeBtn.getAttribute("aria-checked")).toBe("true");
   });
 
-  it("marks inactive options with aria-pressed=false", () => {
+  it("marks inactive options with aria-checked=false", () => {
     renderControl({ options: horizonOptions, value: "Hele dag" });
-    const btn = screen.getByRole("button", { name: "+2 uur" });
-    expect(btn.getAttribute("aria-pressed")).toBe("false");
+    const btn = screen.getByRole("radio", { name: "+2 uur" });
+    expect(btn.getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("checks exactly one radio at a time, matching radiogroup semantics", () => {
+    renderControl({ options: horizonOptions, value: "+6 uur" });
+    const radios = screen.getAllByRole("radio");
+    const checked = radios.filter((radio) => radio.getAttribute("aria-checked") === "true");
+    expect(checked).toHaveLength(1);
+    expect(checked[0]).toHaveAccessibleName("+6 uur");
   });
 
   it("calls onChange with the clicked option", () => {
     const onChange = vi.fn();
     renderControl({ options: horizonOptions, value: "Hele dag", onChange });
-    fireEvent.click(screen.getByRole("button", { name: "+6 uur" }));
+    fireEvent.click(screen.getByRole("radio", { name: "+6 uur" }));
     expect(onChange).toHaveBeenCalledOnce();
     expect(onChange).toHaveBeenCalledWith("+6 uur");
   });
@@ -130,13 +138,13 @@ describe("SegmentedControl — without scrollFractionRef (horizon mode)", () => 
   it("does NOT call onChange when disabled", () => {
     const onChange = vi.fn();
     renderControl({ options: horizonOptions, value: "Hele dag", onChange, disabled: true });
-    fireEvent.click(screen.getByRole("button", { name: "+6 uur" }));
+    fireEvent.click(screen.getByRole("radio", { name: "+6 uur" }));
     expect(onChange).not.toHaveBeenCalled();
   });
 
   it("sets aria-disabled when disabled", () => {
     const { container } = renderControl({ options: horizonOptions, value: "Hele dag", disabled: true });
-    const group = container.querySelector("[role='group']");
+    const group = container.querySelector("[role='radiogroup']");
     expect(group!.getAttribute("aria-disabled")).toBe("true");
   });
 });
@@ -155,7 +163,7 @@ describe("SegmentedControl — with scrollFractionRef (day-selector mode)", () =
   it("has the segmented--with-indicator class on the root element", () => {
     const ref = { current: 0 } as React.RefObject<number>;
     const { container } = renderControl({ scrollFractionRef: ref });
-    const group = container.querySelector("[role='group']");
+    const group = container.querySelector("[role='radiogroup']");
     expect(group!.classList.contains("segmented--with-indicator")).toBe(true);
   });
 
@@ -170,7 +178,7 @@ describe("SegmentedControl — with scrollFractionRef (day-selector mode)", () =
     const ref = { current: 0 } as React.RefObject<number>;
     renderControl({ scrollFractionRef: ref });
     for (const opt of dayOptions) {
-      expect(screen.getByRole("button", { name: opt })).toBeTruthy();
+      expect(screen.getByRole("radio", { name: opt })).toBeTruthy();
     }
   });
 
@@ -190,18 +198,18 @@ describe("SegmentedControl — with scrollFractionRef (day-selector mode)", () =
     expect(morgenBtn!.className).toBe("segment");
   });
 
-  it("active button has aria-pressed=true", () => {
+  it("active button has aria-checked=true", () => {
     const ref = { current: 0 } as React.RefObject<number>;
     renderControl({ value: "Overmorgen", scrollFractionRef: ref });
-    const btn = screen.getByRole("button", { name: "Overmorgen" });
-    expect(btn.getAttribute("aria-pressed")).toBe("true");
+    const btn = screen.getByRole("radio", { name: "Overmorgen" });
+    expect(btn.getAttribute("aria-checked")).toBe("true");
   });
 
   it("calls onChange when a segment button is clicked", () => {
     const onChange = vi.fn();
     const ref = { current: 0 } as React.RefObject<number>;
     renderControl({ scrollFractionRef: ref, onChange });
-    fireEvent.click(screen.getByRole("button", { name: "Week" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Week" }));
     expect(onChange).toHaveBeenCalledWith("Week");
   });
 
@@ -232,7 +240,7 @@ describe("SegmentedControl — displayLabels", () => {
       displayLabels: { Overmorgen: "Overm." } as any,
     });
     // aria-label must still be "Overmorgen" for screen-reader correctness
-    expect(screen.getByRole("button", { name: "Overmorgen" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Overmorgen" })).toBeTruthy();
   });
 });
 
@@ -241,21 +249,21 @@ describe("SegmentedControl — displayLabels", () => {
 // ---------------------------------------------------------------------------
 
 describe("SegmentedControl — accessibility", () => {
-  it("has role=group on the root element", () => {
+  it("has role=radiogroup on the root element", () => {
     const { container } = renderControl();
-    const group = container.querySelector("[role='group']");
+    const group = container.querySelector("[role='radiogroup']");
     expect(group).not.toBeNull();
   });
 
   it("has the aria-label on the group element", () => {
     const { container } = renderControl();
-    const group = container.querySelector("[role='group']");
+    const group = container.querySelector("[role='radiogroup']");
     expect(group!.getAttribute("aria-label")).toBe("Test selector");
   });
 
   it("aria-disabled is false (string) when not disabled", () => {
     const { container } = renderControl();
-    const group = container.querySelector("[role='group']");
+    const group = container.querySelector("[role='radiogroup']");
     // aria-disabled={false} renders as the string "false"
     expect(group!.getAttribute("aria-disabled")).toBe("false");
   });
@@ -268,13 +276,13 @@ describe("SegmentedControl — accessibility", () => {
 describe("SegmentedControl — compact mode", () => {
   it("adds segmented-compact class when compact=true", () => {
     const { container } = renderControl({ options: horizonOptions, value: "Hele dag", compact: true });
-    const group = container.querySelector("[role='group']");
+    const group = container.querySelector("[role='radiogroup']");
     expect(group!.classList.contains("segmented-compact")).toBe(true);
   });
 
   it("does NOT add segmented-compact class when compact=false (default)", () => {
     const { container } = renderControl();
-    const group = container.querySelector("[role='group']");
+    const group = container.querySelector("[role='radiogroup']");
     expect(group!.classList.contains("segmented-compact")).toBe(false);
   });
 });

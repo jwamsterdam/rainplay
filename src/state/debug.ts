@@ -25,7 +25,7 @@ type RainplayDebugState = NonNullable<Window["rainplayState"]>;
 
 declare global {
   interface Window {
-    rp?: Window["rainplayState"];
+    rp: Window["rainplayState"];
     rainplayState?: {
       atoms: typeof debugAtoms;
       get: (atomKey: DebugAtomKey) => unknown;
