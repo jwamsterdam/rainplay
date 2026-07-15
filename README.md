@@ -1,5 +1,7 @@
 # Rainplay
 
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=jwamsterdam_rainplay&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=jwamsterdam_rainplay)
+
 Rainplay is a simple iPhone-first vacation weather web app. It is not meant to be a full weather app. Its job is to answer one practical question:
 
 > Can we go outside now, should we wait a few hours, or is tomorrow better?
