@@ -8,7 +8,20 @@ import { readFileSync } from "fs";
 // Groeit automatisch mee zonder handmatig bumpen.
 const pkg = JSON.parse(readFileSync("./package.json", "utf-8")) as { version: string };
 const [major, minor] = pkg.version.split(".");
-const commitCount = execSync("git rev-list --count HEAD").toString().trim();
+// Sonar S4036 (PATH resolution): execSync resolves "git" via PATH. Accepted —
+// this only runs in this Node build script (dev-start/build time), never in
+// the shipped browser bundle, with no untrusted input. An attacker able to
+// PATH-hijack this process already has local or CI write access, which is a
+// far larger compromise than this call. A hardcoded absolute git path would
+// break Windows/macOS/Linux portability, so we keep PATH resolution and
+// fall back gracefully if git is unavailable (e.g. a downloaded zip with no
+// .git directory) rather than crashing the build over a version string.
+let commitCount = "0";
+try {
+  commitCount = execSync("git rev-list --count HEAD").toString().trim(); // NOSONAR
+} catch {
+  // no-op: keep the "0" fallback
+}
 const APP_VERSION = `v${major}.${minor}.${commitCount}`;
 
 export default defineConfig({
